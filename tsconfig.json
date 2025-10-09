@@ -10,7 +10,11 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src", "test", "vitest.config.ts", "tsup.config.ts"]
 }

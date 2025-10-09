@@ -8,6 +8,7 @@ export default defineConfig({
   dts: true,
   format: ["esm", "cjs"],
   outDir: "dist",
-  target: "node20"
+  target: "node20",
+  tsconfig: "./tsconfig.json"
 });
 
