@@ -1,4 +1,4 @@
-import type { ItemStatus, HistoryItem, UnknownObject } from './types';
+import { ItemStatus, type HistoryItem, type UnknownObject } from './types';
 
 class QueueItem {
   packet: UnknownObject;

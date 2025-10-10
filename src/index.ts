@@ -28,7 +28,12 @@ setInterval(() => {
 
   if (nextMessage.getStatus() === ItemStatus.RECEIVED) {
     //console.log({ currentMessage: nextMessage });
-    nextMessage.markProcessing();
+    const { packet } = nextMessage;
+    if (packet.type.toLowerCase() === 'chat') {
+      nextMessage.markProcessing();
+      return;
+    }
+    nextMessage.markSuccess();
     return;
   }
   if (nextMessage.getStatus() === ItemStatus.PROCESSING) {
@@ -69,9 +74,10 @@ bedrock.ping({ host, port }).then(res => {
   });
 
   client.on('text', (packet) => { // Listen for chat messages from the server and echo them back.
+    log({ packet });
+
     const dt = new Date().toLocaleString();
     if (packet.source_name != username) {
-      log({ packet });
       incomingMessageQueue.push({...packet, event: 'text', getClient: () => client });
     }
   })
