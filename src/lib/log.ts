@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { type UnknownObject } from '@/lib/queues';
+import { type UnknownObject } from '@/lib/types';
 import { env } from '@/config/env';
 
 console.log(`Saving logs to ${env.LOG_FILENAME}`)

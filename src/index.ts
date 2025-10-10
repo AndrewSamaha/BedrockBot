@@ -1,5 +1,6 @@
 import bedrock from 'bedrock-protocol';
-import { incomingMessageQueue, ItemStatus } from '@/lib/queues';
+import { incomingMessageQueue } from '@/lib/queues';
+import { ItemStatus } from '@/lib/types';
 import { log } from '@/lib/log';
 import { env } from '@/config/env';
 
