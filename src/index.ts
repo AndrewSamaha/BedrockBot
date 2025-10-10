@@ -1,32 +1,32 @@
 import bedrock from 'bedrock-protocol';
-import * as dotenv from 'dotenv';
-dotenv.config();
-
 import { incomingMessageQueue, ItemStatus } from '@/lib/queues';
+import { log } from '@/lib/log';
+import { env } from '@/config/env';
 
 // First, let's try to ping the server to test connectivity
-const host = process.env.BEDROCK_HOST || 'localhost';
+const host = env.BEDROCK_HOST;
 const port = 19132;
-const admins = process.env.ADMIN_XUIDS?.split(',') || [];
-const username = process.env.BEDROCK_USERNAME || `AgentBot0${Math.floor(Math.random() * 1000)}`;
+const admins = env.ADMIN_XUIDS;
+const username = env.BEDROCK_USERNAME;
+
 console.log({ admins, username });
 console.log({ adminsenv: process.env.ADMIN_XUIDS })
 console.log(`Attempting to ping ${host}:${port}...`);
 
 setInterval(() => {
   if (incomingMessageQueue.getNumMessages() === 0) {
-    console.log({ datetime: new Date(), currentMessage: 'no messages' });
+    //console.log({ datetime: new Date(), currentMessage: 'no messages' });
     return;
   }
   const nextMessage = incomingMessageQueue.getNextMessage();
 
   if (!nextMessage) {
-    console.log({ datetime: new Date(), currentMessage: 'no messages left in queue' });
+    //console.log({ datetime: new Date(), currentMessage: 'no messages left in queue' });
     return;
   }
 
   if (nextMessage.getStatus() === ItemStatus.RECEIVED) {
-    console.log({ currentMessage: nextMessage });
+    //console.log({ currentMessage: nextMessage });
     nextMessage.markProcessing();
     return;
   }
@@ -44,16 +44,16 @@ setInterval(() => {
       filtered_message: '',
       message
     };
-    console.log({outgoingItem});
+    log({outgoingItem});
     client.queue('text', outgoingItem)
 
     nextMessage.markSuccess();
   }
-}, 3_000);
+}, 2_000);
+
 
 bedrock.ping({ host, port }).then(res => {
-  console.log('Ping successful!', res);
-
+  console.log('Server is reachable. Connecting...', res);
   // If ping works, try to create a client
   const client = bedrock.createClient({
     host,
@@ -70,13 +70,13 @@ bedrock.ping({ host, port }).then(res => {
   client.on('text', (packet) => { // Listen for chat messages from the server and echo them back.
     const dt = new Date().toLocaleString();
     if (packet.source_name != username) {
-      console.log({ datetime: dt, user: packet.source_name, text: packet.message, ...packet });
+      log({ packet });
       incomingMessageQueue.push({...packet, event: 'text', getClient: () => client });
     }
   })
 
   client.on('connect', () => {
-    console.log('Connected to server!');
+    log('Connected to server!');
   });
 
   client.on('error', (err) => {
