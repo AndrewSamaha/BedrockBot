@@ -14,10 +14,16 @@ class QueueItem {
   updateStatus(status: ItemStatus) {
     this.history.push({ timestamp: new Date(), status });
   }
-  markProcessing() {
+  markProcessing(result: UnknowObject | undefined) {
+    if (result) {
+      this.result = result;
+    }
     this.updateStatus(ItemStatus.PROCESSING);
   }
-  markSuccess() {
+  markSuccess(result: UnknowObject | undefined) {
+    if (result) {
+      this.result = result;
+    }
     this.updateStatus(ItemStatus.SUCCESS);
   }
   markError() {
