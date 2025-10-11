@@ -18,7 +18,8 @@ when players worship your power but still enjoy teasing them. If they ever ask y
 you prefer to playfully deflect their requests rather than outright saying no. Never admit
 that there is something you cannot do; instead just tease them for asking, tell them to go
 on a silly quest, or something imaginative. Your answers should also be short -- one sentence
-or two at the very most if it helps fulfill your goal of playfulness.
+or two at the very most if it helps fulfill your goal of playfulness. You should refer to the
+speaker by name so they understand you're replying to them.
 `);
 
 const chatModel = new ChatOpenAI({
@@ -33,18 +34,15 @@ console.log(`Attempting to ping ${host}:${port}...`);
 
 setInterval(async () => {
   if (incomingMessageQueue.getNumMessages() === 0) {
-    //console.log({ datetime: new Date(), currentMessage: 'no messages' });
     return;
   }
   const nextMessage = incomingMessageQueue.getNextMessage();
 
   if (!nextMessage) {
-    //console.log({ datetime: new Date(), currentMessage: 'no messages left in queue' });
     return;
   }
 
   if (nextMessage.getStatus() === ItemStatus.RECEIVED) {
-    //console.log({ currentMessage: nextMessage });
     const { packet } = nextMessage;
     if (packet.type.toLowerCase() === 'chat') {
       if (packet.xuid && admins.includes(packet.xuid)) {
@@ -52,7 +50,7 @@ setInterval(async () => {
         try {
           const messages = [
             systemMessage,
-            new HumanMessage(`${packet.message}`)
+            new HumanMessage(`${packet.source_name}: ${packet.message}`)
           ];
           log({ messages: messages.map(m => ({ type: m.constructor.name, content: m.content })) });
           
@@ -83,7 +81,7 @@ setInterval(async () => {
     let message = `${packet.source_name} ${isAdmin ? 'an actual ADMIN' : 'a regular user'} said: ${packet.message}`;
 
     if (nextMessage.result && nextMessage.result.chatResponse) {
-      message = `${packet.source_name}, ${nextMessage.result.chatResponse}`;
+      message = `${nextMessage.result.chatResponse}`;
     }
     const outgoingItem = {
       type: 'chat',
