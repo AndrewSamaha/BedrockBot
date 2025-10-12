@@ -74,21 +74,27 @@ class GameState {
       return;
     }
 
-    // https://prismarinejs.github.io/minecraft-data/?v=bedrock_1.18.0&d=protocol#packet_move_player
+    // Check if we have a valid current tick
+    if (!this.currentTick) {
+      console.error('Cannot move: currentTick is not set');
+      return;
+    }
+
+    // https://prismarinejs.github.io/minecraft-data/?v=bedrock_1.21.111&d=protocol#packet_move_player
     const movePlayerObj = {
-      runtime_id: Number(this.runtimeEntityId), // Convert BigInt to number
-      position: newPosition,
-      pitch: newRotation?.pitch || 0, // Provide default value instead of undefined
-      yaw: newRotation?.yaw || 0, // Provide default value instead of undefined
-      head_yaw: newRotation?.headYaw || newRotation?.yaw || 0, // Use yaw as fallback for head_yaw
-      mode: 0,
-      on_ground: true,
-      ridden_runtime_id: 0,
-      tick: this.currentTick, // + 5n, // Use BigInt arithmetic
-      //teleport:
+      runtime_id: Number(this.runtimeEntityId), // Convert BigInt to number (varint)
+      position: newPosition, // vec3f
+      pitch: newRotation?.pitch || 0, // lf32 (degrees)
+      yaw: newRotation?.yaw || 0, // lf32 (degrees)
+      head_yaw: newRotation?.headYaw || newRotation?.yaw || 0, // lf32 (degrees)
+      mode: 0, // u8 (0=normal, 1=reset, 2=teleport, 3=rotation)
+      on_ground: true, // bool
+      ridden_runtime_id: 0, // varint (0 if not riding anything)
+      tick: this.currentTick + 100n, // varint64 (BigInt) - REQUIRED FIELD!
     };
-    log({ sending: movePlayerObj })
-    this.client.queue('move_player', movePlayerObj);
+    
+    log({ sending: movePlayerObj });
+    this.client.queue('move_player', movePlayerObj); // Use queue() not write()
   }
 
   tic() {
