@@ -1,3 +1,4 @@
+process.env.DEBUG = 'minecraft-protocol raknet'
 import bedrock from 'bedrock-protocol';
 import { incomingMessageQueue } from '@/lib/queues';
 import { ItemStatus } from '@/lib/types';
@@ -6,9 +7,18 @@ import { env } from '@/config/env';
 
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+
+// prismarine-registry + prismarine-chunk are used to build ChunkColumn
+import createRegistry from 'prismarine-registry'
+import createChunkColumn from 'prismarine-chunk'
+
+// pick the protocol/version you need
+const registry = createRegistry('bedrock_1.21.111')
+const ChunkColumn = createChunkColumn(registry)
+
 // First, let's try to ping the server to test connectivity
 const host = env.BEDROCK_HOST;
-const port = 19132;
+const port = env.BEDROCK_PORT;
 const admins = env.ADMIN_XUIDS;
 const username = env.BEDROCK_USERNAME;
 
@@ -45,7 +55,7 @@ setInterval(async () => {
   if (nextMessage.getStatus() === ItemStatus.RECEIVED) {
     const { packet } = nextMessage;
     if (packet.type.toLowerCase() === 'chat') {
-      if (packet.xuid && admins.includes(packet.xuid)) {
+      if (true || packet.xuid && admins.includes(packet.xuid)) {
         log({ call: 'chat_model_invoke', message: packet.message })
         try {
           const messages = [
@@ -53,9 +63,9 @@ setInterval(async () => {
             new HumanMessage(`${packet.source_name}: ${packet.message}`)
           ];
           log({ messages: messages.map(m => ({ type: m.constructor.name, content: m.content })) });
-          
+
           const response = await chatModel.invoke(messages);
-          
+
           log({ response });
           const chatResponse = response.content;
           log({ chatResponse })
@@ -92,7 +102,7 @@ setInterval(async () => {
       filtered_message: '',
       message
     };
-    log({outgoingItem});
+    log({ outgoingItem });
     client.queue('text', outgoingItem)
 
     nextMessage.markSuccess();
@@ -120,7 +130,7 @@ bedrock.ping({ host, port }).then(res => {
 
     const dt = new Date().toLocaleString();
     if (packet.source_name != username) {
-      incomingMessageQueue.push({...packet, event: 'text', getClient: () => client });
+      incomingMessageQueue.push({ ...packet, event: 'text', getClient: () => client });
     }
   })
 
@@ -131,6 +141,45 @@ bedrock.ping({ host, port }).then(res => {
   client.on('error', (err) => {
     console.error('Client error:', err);
   });
+
+  client.once('resource_packs_info__XX', (packet) => {
+    console.log('received resource_packs_info')
+    log({ packet })
+    client.write('resource_pack_client_response', {
+      response_status: 'completed',
+      resourcepackids: []
+    })
+
+    client.once('resource_pack_stack', (stack) => {
+      client.write('resource_pack_client_response', {
+        response_status: 'completed',
+        resourcepackids: []
+      })
+    })
+
+    client.queue('client_cache_status', { enabled: false })
+    client.queue('request_chunk_radius', { chunk_radius: 1 })
+    client.queue('tick_sync', { request_time: BigInt(Date.now()), response_time: 0n })
+  });
+
+  client.on('move_player', async packet => {
+    log({ packet })
+  });
+
+  client.on('level_chunk', async packet => {
+    //log({ packet })
+    const { payload, ...otherPacketFields } = packet;
+    log({ packet: { ...otherPacketFields, payload: 'omitted_during_logging' } })
+    const cc = new ChunkColumn(packet.x, packet.z)
+    await cc.networkDecodeNoCache(packet.payload, packet.sub_chunk_count)
+    const blocks = []
+    for (let x = 0; x < 16; x++) {
+      for (let z = 0; z < 16; z++) {
+        blocks.push(cc.getBlock(x, 0, z)) // Read some blocks in this chunk
+      }
+    }
+    //log({ level_chunk: true, packet_x: packet.x, packet_y: packet.y })
+  })
 
 }).catch(err => {
   console.error('Ping failed:', err);

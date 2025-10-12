@@ -41,6 +41,8 @@
     "@langchain/langgraph": "^0.4.9",
     "@langchain/openai": "^0.6.14",
     "bedrock-protocol": "^3.49.0",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "prismarine-chunk": "^1.39.0",
+    "prismarine-registry": "^1.11.0"
   }
 }
