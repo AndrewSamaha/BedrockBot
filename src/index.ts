@@ -4,6 +4,7 @@ import { incomingMessageQueue } from '@/lib/queues';
 import { ItemStatus } from '@/lib/types';
 import { log } from '@/lib/log';
 import { env } from '@/config/env';
+import { gameState } from '@/lib/GameState';
 
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
@@ -120,8 +121,10 @@ bedrock.ping({ host, port }).then(res => {
     offline: true
   });
 
-  client.on('spawn', () => {
+  client.on('spawn', (packet) => {
     console.log('spawned!')
+    log({ packet })
+    gameState.spawn(client);
     // Example: send a chat message
   });
 
@@ -163,13 +166,14 @@ bedrock.ping({ host, port }).then(res => {
   });
 
   client.on('move_player', async packet => {
-    log({ packet })
+    //log({ packet })
+    gameState.setPosition(packet);
   });
 
   client.on('level_chunk', async packet => {
     //log({ packet })
     const { payload, ...otherPacketFields } = packet;
-    log({ packet: { ...otherPacketFields, payload: 'omitted_during_logging' } })
+    //log({ packet: { ...otherPacketFields, payload: 'omitted_during_logging' } })
     const cc = new ChunkColumn(packet.x, packet.z)
     await cc.networkDecodeNoCache(packet.payload, packet.sub_chunk_count)
     const blocks = []
