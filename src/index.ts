@@ -110,7 +110,9 @@ setInterval(async () => {
   }
 }, 2_000);
 
-
+// Moving players
+// Packet player auth input
+// MovePlayer
 bedrock.ping({ host, port }).then(res => {
   console.log('Server is reachable. Connecting...', res);
   // If ping works, try to create a client
@@ -123,11 +125,17 @@ bedrock.ping({ host, port }).then(res => {
 
   client.on('spawn', (packet) => {
     console.log('spawned!')
-    log({ packet })
-    gameState.spawn(client);
+    log({ spawn: true, packet })
+    gameState.spawn();
     // Example: send a chat message
   });
-
+  client.on('start_game', (packet) => {
+    log({ packet });
+    gameState.startGame(client, packet);
+  });
+  client.on('add_player', (packet) => {
+    log({ add_player: true, packet })
+  })
   client.on('text', (packet) => { // Listen for chat messages from the server and echo them back.
     log({ packet });
 
@@ -166,8 +174,9 @@ bedrock.ping({ host, port }).then(res => {
   });
 
   client.on('move_player', async packet => {
-    //log({ packet })
-    gameState.setPosition(packet);
+    // fires when other entities send their position (every tick)
+    // so we use it to setTick
+    gameState.setTick(packet);
   });
 
   client.on('level_chunk', async packet => {
