@@ -5,17 +5,10 @@ import { ItemStatus } from '@/lib/types';
 import { log } from '@/lib/log';
 import { env } from '@/config/env';
 import { gameState } from '@/lib/GameState';
+import { registerClientHandlers } from '@/lib/client';
 
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-
-// prismarine-registry + prismarine-chunk are used to build ChunkColumn
-import createRegistry from 'prismarine-registry'
-import createChunkColumn from 'prismarine-chunk'
-
-// pick the protocol/version you need
-const registry = createRegistry('bedrock_1.21.111')
-const ChunkColumn = createChunkColumn(registry)
 
 // First, let's try to ping the server to test connectivity
 const host = env.BEDROCK_HOST;
@@ -123,76 +116,8 @@ bedrock.ping({ host, port }).then(res => {
     offline: true
   });
 
-  client.on('spawn', (packet) => {
-    console.log('spawned!')
-    log({ spawn: true, packet })
-    gameState.spawn();
-    // Example: send a chat message
-  });
-  client.on('start_game', (packet) => {
-    log({ packet });
-    gameState.startGame(client, packet);
-  });
-  client.on('add_player', (packet) => {
-    log({ add_player: true, packet })
-  })
-  client.on('text', (packet) => { // Listen for chat messages from the server and echo them back.
-    log({ packet });
-
-    const dt = new Date().toLocaleString();
-    if (packet.source_name != username) {
-      incomingMessageQueue.push({ ...packet, event: 'text', getClient: () => client });
-    }
-  })
-
-  client.on('connect', () => {
-    log('Connected to server!');
-  });
-
-  client.on('error', (err) => {
-    console.error('Client error:', err);
-  });
-
-  client.once('resource_packs_info__XX', (packet) => {
-    console.log('received resource_packs_info')
-    log({ packet })
-    client.write('resource_pack_client_response', {
-      response_status: 'completed',
-      resourcepackids: []
-    })
-
-    client.once('resource_pack_stack', (stack) => {
-      client.write('resource_pack_client_response', {
-        response_status: 'completed',
-        resourcepackids: []
-      })
-    })
-
-    client.queue('client_cache_status', { enabled: false })
-    client.queue('request_chunk_radius', { chunk_radius: 1 })
-    client.queue('tick_sync', { request_time: BigInt(Date.now()), response_time: 0n })
-  });
-
-  client.on('move_player', async packet => {
-    // fires when other entities send their position (every tick)
-    // so we use it to setTick
-    gameState.setTick(packet);
-  });
-
-  client.on('level_chunk', async packet => {
-    //log({ packet })
-    const { payload, ...otherPacketFields } = packet;
-    //log({ packet: { ...otherPacketFields, payload: 'omitted_during_logging' } })
-    const cc = new ChunkColumn(packet.x, packet.z)
-    await cc.networkDecodeNoCache(packet.payload, packet.sub_chunk_count)
-    const blocks = []
-    for (let x = 0; x < 16; x++) {
-      for (let z = 0; z < 16; z++) {
-        blocks.push(cc.getBlock(x, 0, z)) // Read some blocks in this chunk
-      }
-    }
-    //log({ level_chunk: true, packet_x: packet.x, packet_y: packet.y })
-  })
+  // Register all client event handlers
+  registerClientHandlers(client);
 
 }).catch(err => {
   console.error('Ping failed:', err);
