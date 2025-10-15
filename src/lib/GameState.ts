@@ -1,9 +1,14 @@
 import { log } from './log';
+import { createRandomMoveVectorGenerator } from './playerInput/randomInput.js';
+import { buildAuthInputPacket } from './playerInput/utils.js';
 
 const TIC_INTERVAL = 5_000;
 
 class GameState {
   playerPosition: unknown;
+  pitch: number | undefined;
+  yaw: number | undefined;
+  head_yaw: number | undefined;
   rotation: unknown;
   entityId: number | undefined;
   runtimeEntityId: number | undefined;
@@ -13,12 +18,18 @@ class GameState {
   spawned: boolean;
   seed: string | undefined;
   currentTick: bigint | undefined;
+  nextRandomMove: () => {};
 
   private ticInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.spawned = false;
     this.lastTic = 0;
+    this.nextRandomMove = createRandomMoveVectorGenerator({
+      maxSpeedBps: 4.3,
+      wanderPerTick: 0.10,
+      friction: 0.14
+    });
   }
 
   startGame(client: unknown, packet: unknown) {
@@ -37,9 +48,11 @@ class GameState {
     this.currentTick = packet?.current_tick;
     this.startTic();
   }
+
   spawn() {
     this.spawned = true;
   }
+
   startTic() {
     if (this.ticInterval) {
       console.log('Tic interval already running, clearing previous interval');
@@ -54,17 +67,33 @@ class GameState {
   }
 
   randomMove() {
-    const newPosition = {
-      x: this.playerPosition.x + (Math.random() - 0.5) * 2, // Add some random movement
-      y: this.playerPosition.y,
-      z: this.playerPosition.z + (Math.random() - 0.5) * 2
-    };
-    const newRotation = {
-      yaw: Math.floor(Math.random() * 360),
-      pitch: 0,
-      headYaw: Math.floor(Math.random() * 360) // Add headYaw for head_yaw field
-    }
-    this.move(newPosition, newRotation);
+    const moveVector = this.nextRandomMove();
+    const { newState, packet } = buildAuthInputPacket({
+      currentPos: this.playerPosition,
+      currentRot: {
+        yaw: this.yaw,
+        pitch: this.pitch,
+        head_yaw: this.head_yaw,
+      },
+      moveVector,
+      tick: BigInt(++this.currentTick),
+      sprint: false
+    })
+    this.playerPosition = newState.position;
+    this.pitch = newState.rotation.pitch;
+    this.yaw = newState.rotation.yaw;
+    this.head_yaw = newState.rotation.head_yaw;
+
+    log({ player_auth_input: packet });
+    this.client.queue('player_auth_input', packet);
+    //this.client('player_auth_input',)
+  }
+
+  setPositionFromServer({ position, pitch, yaw, head_yaw }) {
+    this.playerPosition = position;
+    this.pitch = pitch;
+    this.yaw = yaw;
+    this.head_yaw = head_yaw;
   }
 
   move(newPosition, newRotation) {
@@ -74,27 +103,21 @@ class GameState {
       return;
     }
 
-    // Check if we have a valid current tick
-    if (!this.currentTick) {
-      console.error('Cannot move: currentTick is not set');
-      return;
-    }
-
-    // https://prismarinejs.github.io/minecraft-data/?v=bedrock_1.21.111&d=protocol#packet_move_player
+    // https://prismarinejs.github.io/minecraft-data/?v=bedrock_1.18.0&d=protocol#packet_move_player
     const movePlayerObj = {
-      runtime_id: Number(this.runtimeEntityId), // Convert BigInt to number (varint)
-      position: newPosition, // vec3f
-      pitch: newRotation?.pitch || 0, // lf32 (degrees)
-      yaw: newRotation?.yaw || 0, // lf32 (degrees)
-      head_yaw: newRotation?.headYaw || newRotation?.yaw || 0, // lf32 (degrees)
-      mode: 0, // u8 (0=normal, 1=reset, 2=teleport, 3=rotation)
-      on_ground: true, // bool
-      ridden_runtime_id: 0, // varint (0 if not riding anything)
-      tick: this.currentTick + 100n, // varint64 (BigInt) - REQUIRED FIELD!
+      runtime_id: Number(this.runtimeEntityId), // Convert BigInt to number
+      position: newPosition,
+      pitch: newRotation?.pitch || 0, // Provide default value instead of undefined
+      yaw: newRotation?.yaw || 0, // Provide default value instead of undefined
+      head_yaw: newRotation?.headYaw || newRotation?.yaw || 0, // Use yaw as fallback for head_yaw
+      mode: 0,
+      on_ground: true,
+      ridden_runtime_id: 0,
+      tick: this.currentTick, // + 5n, // Use BigInt arithmetic
+      //teleport:
     };
-    
-    log({ sending: movePlayerObj });
-    this.client.queue('move_player', movePlayerObj); // Use queue() not write()
+    log({ sending: movePlayerObj })
+    this.client.write('move_player', movePlayerObj);
   }
 
   tic() {
