@@ -1,8 +1,7 @@
 import { log } from './log';
-import { createRandomMoveVectorGenerator } from './playerInput/randomInput.js';
-import { buildAuthInputPacket } from './playerInput/utils.js';
+import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement'
 
-const TIC_INTERVAL = 5_000;
+const TIC_INTERVAL = 100;
 
 class GameState {
   playerPosition: unknown;
@@ -76,9 +75,11 @@ class GameState {
         head_yaw: this.head_yaw,
       },
       moveVector,
-      tick: BigInt(++this.currentTick),
+      tick: this.currentTick ? this.currentTick + 1n : 0n,
       sprint: false
-    })
+    });
+
+    // Update state
     this.playerPosition = newState.position;
     this.pitch = newState.rotation.pitch;
     this.yaw = newState.rotation.yaw;
@@ -86,7 +87,6 @@ class GameState {
 
     log({ player_auth_input: packet });
     this.client.queue('player_auth_input', packet);
-    //this.client('player_auth_input',)
   }
 
   setPositionFromServer({ position, pitch, yaw, head_yaw }) {
@@ -117,7 +117,7 @@ class GameState {
       //teleport:
     };
     log({ sending: movePlayerObj })
-    this.client.write('move_player', movePlayerObj);
+    this.client.queue('move_player', movePlayerObj);
   }
 
   tic() {
