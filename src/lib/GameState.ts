@@ -18,6 +18,8 @@ class GameState {
   seed: string | undefined;
   currentTick: bigint | undefined;
   nextRandomMove: () => {};
+  commandsEnabled: boolean | undefined;
+  gameRules: unknown | undefined;
 
   private ticInterval: NodeJS.Timeout | null = null;
 
