@@ -2,7 +2,7 @@ import { log } from '@/lib/log';
 import { incomingMessageQueue } from '@/lib/queues';
 import { env } from '@/config/env';
 
-export const text = {
+const text = {
   name: 'text' as const,
   fn: (packet: any, client: any) => {
     log({ packet });
@@ -13,3 +13,5 @@ export const text = {
     }
   }
 };
+
+export default text;

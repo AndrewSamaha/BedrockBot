@@ -14,7 +14,7 @@ function sendCommand(client: any, command: string) {
   })
 }
 
-export const startGame = {
+const startGame = {
   name: 'start_game' as const,
   fn: (packet: any, client: any) => {
     log({ packet });
@@ -29,3 +29,5 @@ export const startGame = {
 
   }
 };
+
+export default startGame;

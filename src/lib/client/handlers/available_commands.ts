@@ -1,7 +1,7 @@
 import { log } from '@/lib/log';
 
 
-export const available_commands = {
+const available_commands = {
   name: 'available_commands' as const,
   fn: async (packet: unknown) => {
     // fires when other entities send their position (every tick)
@@ -9,3 +9,5 @@ export const available_commands = {
     log({ packet });
   }
 };
+
+export default available_commands;

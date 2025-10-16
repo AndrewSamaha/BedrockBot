@@ -1,16 +1,6 @@
-import { spawn } from './handlers/spawn';
-import { startGame } from './handlers/start_game';
-import { addPlayer } from './handlers/add_player';
-import { text } from './handlers/text';
-import { connect } from './handlers/connect';
-import { error } from './handlers/error';
-import { resourcePacksInfo } from './handlers/resource_packs';
-import { movePlayer } from './handlers/move_player';
-import { levelChunk } from './handlers/level_chunk';
-import { command_output } from './handlers/command_output.ts';
-import { available_commands } from './handlers/available_commands';
-import { set_commands_enabled } from './handlers/set_commands_enabled';
-import { game_rules_changed } from './handlers/game_rules_changed.js';
+import { readdir } from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { dirname, join, extname } from 'path';
 
 // Define handler type
 export interface ClientHandler {
@@ -18,25 +8,50 @@ export interface ClientHandler {
   fn: (...args: any[]) => void | Promise<void>;
 }
 
-// Collect all handlers
-const handlers: ClientHandler[] = [
-  spawn,
-  startGame,
-  addPlayer,
-  text,
-  connect,
-  error,
-  resourcePacksInfo,
-  movePlayer,
-  levelChunk,
-  command_output,
-  available_commands,
-  set_commands_enabled,
-  game_rules_changed
-];
+// Function to dynamically load all handlers
+async function loadHandlers(): Promise<ClientHandler[]> {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const handlersDir = join(__dirname, 'handlers');
+  
+  console.log('Loading handlers from:', handlersDir);
+  
+  // Read all files in the handlers directory
+  const files = await readdir(handlersDir);
+  console.log('Found files:', files);
+  
+  // Filter for TypeScript files
+  const handlerFiles = files.filter(file => extname(file) === '.ts');
+  console.log('TypeScript handler files:', handlerFiles);
+  
+  const handlers: ClientHandler[] = [];
+  
+  for (const file of handlerFiles) {
+    try {
+      // Import the handler file dynamically
+      const handlerModule = await import(`./handlers/${file}`);
+      
+      // Check if the module has a default export
+      if (handlerModule.default) {
+        console.log(`Loaded handler: ${file} -> ${handlerModule.default.name}`);
+        handlers.push(handlerModule.default);
+      } else {
+        console.warn(`Handler file ${file} does not have a default export`);
+      }
+    } catch (error) {
+      console.error(`Failed to load handler ${file}:`, error);
+    }
+  }
+  
+  console.log(`Successfully loaded ${handlers.length} handlers`);
+  return handlers;
+}
 
 // Function to register all handlers with a client
-export const registerClientHandlers = (client: any) => {
+export const registerClientHandlers = async (client: any) => {
+  // Load handlers dynamically
+  const handlers = await loadHandlers();
+  
   handlers.forEach((handler) => {
     if (handler.name === 'resource_packs_info__XX') {
       // Special case for once() handler
@@ -50,5 +65,3 @@ export const registerClientHandlers = (client: any) => {
     }
   });
 };
-
-export { handlers };

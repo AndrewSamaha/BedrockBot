@@ -184,7 +184,7 @@ setInterval(async () => {
 // Moving players
 // Packet player auth input
 // MovePlayer
-bedrock.ping({ host, port }).then(res => {
+bedrock.ping({ host, port }).then(async res => {
   console.log('Server is reachable. Connecting...', res);
   // If ping works, try to create a client
   const client = bedrock.createClient({
@@ -195,7 +195,7 @@ bedrock.ping({ host, port }).then(res => {
   });
 
   // Register all client event handlers
-  registerClientHandlers(client);
+  await registerClientHandlers(client);
 
 }).catch(err => {
   console.error('Ping failed:', err);

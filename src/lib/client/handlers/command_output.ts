@@ -2,7 +2,7 @@ import { log } from '@/lib/log';
 import { incomingMessageQueue } from '@/lib/queues';
 import { env } from '@/config/env';
 
-export const command_output = {
+const command_output = {
   name: 'command_output' as const,
   fn: (packet: any, client: any) => {
     log({ packet });
@@ -11,3 +11,5 @@ export const command_output = {
     console.dir({ output: packet.output }, { depth: null })
   }
 };
+
+export default command_output;

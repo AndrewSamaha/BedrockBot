@@ -5,7 +5,7 @@ import createChunkColumn from 'prismarine-chunk';
 const registry = createRegistry('bedrock_1.21.111');
 const ChunkColumn = createChunkColumn(registry);
 
-export const levelChunk = {
+const levelChunk = {
   name: 'level_chunk' as const,
   fn: async (packet: any) => {
     //log({ packet })
@@ -22,3 +22,5 @@ export const levelChunk = {
     //log({ level_chunk: true, packet_x: packet.x, packet_y: packet.y })
   }
 };
+
+export default levelChunk;

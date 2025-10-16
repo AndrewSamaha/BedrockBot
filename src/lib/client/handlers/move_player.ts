@@ -3,7 +3,7 @@ import { log } from '@/lib/log';
 import { type MovePlayer } from '../types/move_player';
 
 
-export const movePlayer = {
+const movePlayer = {
   name: 'move_player' as const,
   fn: async (packet: MovePlayer) => {
     // fires when other entities send their position (every tick)
@@ -20,3 +20,5 @@ export const movePlayer = {
     }
   }
 };
+
+export default movePlayer;

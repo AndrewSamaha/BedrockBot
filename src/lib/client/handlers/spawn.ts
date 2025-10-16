@@ -1,7 +1,7 @@
 import { log } from '@/lib/log';
 import { gameState } from '@/lib/GameState';
 
-export const spawn = {
+const spawn = {
   name: 'spawn' as const,
   fn: (packet: any) => {
     console.log('spawned!');
@@ -10,3 +10,5 @@ export const spawn = {
     // Example: send a chat message
   }
 };
+
+export default spawn;

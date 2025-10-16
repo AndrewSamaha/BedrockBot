@@ -1,6 +1,6 @@
 import { log } from '@/lib/log';
 
-export const resourcePacksInfo = {
+const resourcePacksInfo = {
   name: 'resource_packs_info__XX' as const,
   fn: (packet: any, client: any) => {
     console.log('received resource_packs_info');
@@ -22,3 +22,5 @@ export const resourcePacksInfo = {
     client.queue('tick_sync', { request_time: BigInt(Date.now()), response_time: 0n });
   }
 };
+
+export default resourcePacksInfo;

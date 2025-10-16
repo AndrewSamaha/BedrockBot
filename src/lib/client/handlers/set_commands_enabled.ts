@@ -1,7 +1,7 @@
 import { log } from '@/lib/log';
 import { gameState } from '@/lib/GameState'
   ;
-export const set_commands_enabled = {
+const set_commands_enabled = {
   name: 'set_commands_enabled' as const,
   fn: (packet: any, client: any) => {
     log({ packet });
@@ -9,3 +9,5 @@ export const set_commands_enabled = {
     log({ set_commands_enabled: gameState.commandsEnabled })
   }
 };
+
+export default set_commands_enabled;
