@@ -1,0 +1,1102 @@
+{
+  "pitch": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": true,
+    "min": 0,
+    "max": 4.010101318359375,
+    "values": [
+      "0",
+      "4.010101318359375"
+    ]
+  },
+  "yaw": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": true,
+    "min": -167.04684448242188,
+    "max": 0,
+    "values": [
+      "0",
+      "-167.04684448242188"
+    ]
+  },
+  "position.x": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 22.31336212158203,
+    "max": 22.31336212158203,
+    "values": [
+      "22.31336212158203"
+    ]
+  },
+  "position.y": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 83.90293884277344,
+    "max": 83.90293884277344,
+    "values": [
+      "83.90293884277344"
+    ]
+  },
+  "position.z": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 90.2899398803711,
+    "max": 90.2899398803711,
+    "values": [
+      "90.2899398803711"
+    ]
+  },
+  "move_vector.x": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  },
+  "move_vector.z": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  },
+  "head_yaw": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": -167.04684448242188,
+    "max": -167.04684448242188,
+    "values": [
+      "-167.04684448242188"
+    ]
+  },
+  "input_data._value": {
+    "type": "string",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "\"281474976710656\"",
+      "\"282024732524544\""
+    ]
+  },
+  "input_data.ascend": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.descend": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.north_jump": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.jump_down": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.sprint_down": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.change_height": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.jumping": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.auto_jumping_in_water": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.sneaking": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.sneak_down": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.up": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.down": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.left": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.right": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.up_left": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.up_right": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.want_up": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.want_down": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.want_down_slow": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.want_up_slow": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.sprinting": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.ascend_block": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.descend_block": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.sneak_toggle_down": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.persist_sneak": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.start_sprinting": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.stop_sprinting": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.start_sneaking": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.stop_sneaking": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.start_swimming": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.stop_swimming": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.start_jumping": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.start_gliding": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.stop_gliding": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.item_interact": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.block_action": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.item_stack_request": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.handled_teleport": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.emoting": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.missed_swing": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false",
+      "true"
+    ]
+  },
+  "input_data.start_crawling": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.stop_crawling": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.start_flying": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.stop_flying": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.received_server_data": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.client_predicted_vehicle": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.paddling_left": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.paddling_right": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.block_breaking_delay_enabled": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "true"
+    ]
+  },
+  "input_data.horizontal_collision": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.vertical_collision": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.down_left": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.down_right": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.start_using_item": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.camera_relative_movement_enabled": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.rot_controlled_by_move_direction": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.start_spin_attack": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.stop_spin_attack": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.hotbar_only_touch": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.jump_released_raw": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.jump_pressed_raw": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.jump_current_raw": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.sneak_released_raw": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.sneak_pressed_raw": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_data.sneak_current_raw": {
+    "type": "boolean",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "false"
+    ]
+  },
+  "input_mode": {
+    "type": "string",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "\"mouse\""
+    ]
+  },
+  "play_mode": {
+    "type": "string",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "\"normal\"",
+      "\"screen\""
+    ]
+  },
+  "interaction_model": {
+    "type": "string",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "\"touch\""
+    ]
+  },
+  "interact_rotation.x": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 3,
+    "isNumeric": true,
+    "min": 0,
+    "max": 5.839406490325928,
+    "values": [
+      "0",
+      "5.839406490325928",
+      "4.010105133056641"
+    ]
+  },
+  "interact_rotation.z": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": true,
+    "min": -167.04684448242188,
+    "max": 0,
+    "values": [
+      "0",
+      "-167.04684448242188"
+    ]
+  },
+  "tick": {
+    "type": "string",
+    "count": 100,
+    "uniqueValues": 100,
+    "isNumeric": false,
+    "min": null,
+    "max": null,
+    "values": [
+      "\"31\"",
+      "\"32\"",
+      "\"33\"",
+      "\"34\"",
+      "\"35\"",
+      "\"36\"",
+      "\"37\"",
+      "\"38\"",
+      "\"39\"",
+      "\"40\"",
+      "\"41\"",
+      "\"42\"",
+      "\"43\"",
+      "\"44\"",
+      "\"45\"",
+      "\"46\"",
+      "\"47\"",
+      "\"48\"",
+      "\"49\"",
+      "\"50\"",
+      "\"51\"",
+      "\"52\"",
+      "\"53\"",
+      "\"54\"",
+      "\"55\"",
+      "\"56\"",
+      "\"57\"",
+      "\"58\"",
+      "\"59\"",
+      "\"60\"",
+      "\"61\"",
+      "\"62\"",
+      "\"63\"",
+      "\"64\"",
+      "\"65\"",
+      "\"66\"",
+      "\"67\"",
+      "\"68\"",
+      "\"69\"",
+      "\"70\"",
+      "\"71\"",
+      "\"72\"",
+      "\"73\"",
+      "\"74\"",
+      "\"75\"",
+      "\"76\"",
+      "\"77\"",
+      "\"78\"",
+      "\"79\"",
+      "\"80\"",
+      "\"81\"",
+      "\"82\"",
+      "\"83\"",
+      "\"84\"",
+      "\"85\"",
+      "\"86\"",
+      "\"87\"",
+      "\"88\"",
+      "\"89\"",
+      "\"90\"",
+      "\"91\"",
+      "\"92\"",
+      "\"93\"",
+      "\"94\"",
+      "\"95\"",
+      "\"96\"",
+      "\"97\"",
+      "\"98\"",
+      "\"99\"",
+      "\"100\"",
+      "\"101\"",
+      "\"102\"",
+      "\"103\"",
+      "\"104\"",
+      "\"105\"",
+      "\"106\"",
+      "\"107\"",
+      "\"108\"",
+      "\"109\"",
+      "\"110\"",
+      "\"111\"",
+      "\"112\"",
+      "\"113\"",
+      "\"114\"",
+      "\"115\"",
+      "\"116\"",
+      "\"117\"",
+      "\"118\"",
+      "\"119\"",
+      "\"120\"",
+      "\"121\"",
+      "\"122\"",
+      "\"123\"",
+      "\"124\"",
+      "\"125\"",
+      "\"126\"",
+      "\"127\"",
+      "\"128\"",
+      "\"129\"",
+      "\"130\""
+    ]
+  },
+  "delta.x": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  },
+  "delta.y": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  },
+  "delta.z": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  },
+  "analogue_move_vector.x": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  },
+  "analogue_move_vector.z": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  },
+  "camera_orientation.x": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0.22360552847385406,
+    "values": [
+      "0",
+      "0.22360552847385406"
+    ]
+  },
+  "camera_orientation.y": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": true,
+    "min": -0.06993232667446136,
+    "max": 0,
+    "values": [
+      "0",
+      "-0.06993232667446136"
+    ]
+  },
+  "camera_orientation.z": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 2,
+    "isNumeric": true,
+    "min": -0.9721677303314209,
+    "max": 0,
+    "values": [
+      "0",
+      "-0.9721677303314209"
+    ]
+  },
+  "raw_move_vector.x": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  },
+  "raw_move_vector.z": {
+    "type": "number",
+    "count": 100,
+    "uniqueValues": 1,
+    "isNumeric": true,
+    "min": 0,
+    "max": 0,
+    "values": [
+      "0"
+    ]
+  }
+}
