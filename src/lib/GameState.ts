@@ -20,6 +20,8 @@ class GameState {
   nextRandomMove: () => {};
   commandsEnabled: boolean | undefined;
   gameRules: unknown | undefined;
+  attributes: unknown | undefined;
+
 
   private ticInterval: NodeJS.Timeout | null = null;
 
