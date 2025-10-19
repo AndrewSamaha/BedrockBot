@@ -1,5 +1,5 @@
 export type MovePlayer = {
-  runtime_id: BigInt,
+  runtime_id: bigint,
   position: {
     x: number,
     y: number,
@@ -12,6 +12,6 @@ export type MovePlayer = {
   on_ground: boolean,
   ridden_runtime_id: number,
   teleport: undefined | unknown,
-  tick: BigInt
+  tick: bigint
 };
 

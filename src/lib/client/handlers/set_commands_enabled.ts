@@ -1,6 +1,6 @@
-import { log } from '@/lib/log';
 import { gameState } from '@/lib/GameState'
   ;
+import { log } from '@/lib/log';
 const set_commands_enabled = {
   name: 'set_commands_enabled' as const,
   fn: (packet: any, client: any) => {

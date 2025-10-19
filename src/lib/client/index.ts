@@ -1,6 +1,6 @@
 import { readdir } from 'fs/promises';
-import { fileURLToPath } from 'url';
 import { dirname, join, extname } from 'path';
+import { fileURLToPath } from 'url';
 
 // Define handler type
 export interface ClientHandler {

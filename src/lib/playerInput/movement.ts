@@ -3,6 +3,8 @@
 export type Vec3 = { x: number; y: number; z: number }
 export type Rotation = { pitch: number; yaw: number; headYaw: number }
 
+import type { InputDataFlags, InputMode, PlayMode, InteractionModel, Vector3D, Vector2D } from './types.js'
+
 const TICKS_PER_SEC = 20
 const DT = 1 / TICKS_PER_SEC
 
@@ -13,7 +15,7 @@ const normalizeAngleDeg = (a: number) => (((a + 180) % 360 + 360) % 360) - 180
 // --------- Input flag bitset (Bedrock 1.21.111 InputFlag mapping)
 const INPUT = {
   ASCEND: 1,                    // 0x01 - Moving up (jump/fly up)
-  DESCEND: 2,                   // 0x02 - Moving down (crouch/fly down)  
+  DESCEND: 2,                   // 0x02 - Moving down (crouch/fly down)
   NORTH_JUMP: 4,                // 0x04 - Moving north + jump
   JUMP_DOWN: 8,                 // 0x08 - Jump down
   SPRINT_DOWN: 16,              // 0x10 - Sprint down
@@ -45,32 +47,92 @@ const INPUT = {
   CLIENT_PREDICTED_VEHICLE: 1073741824 // 0x40000000 - Client predicted vehicle
 } as const
 
-export function inputFlags(
+export function createInputDataFlags(
   { forward = false, back = false, left = false, right = false, jump = false, sprint = false, sneak = false }:
     { forward?: boolean; back?: boolean; left?: boolean; right?: boolean; jump?: boolean; sprint?: boolean; sneak?: boolean }
-) {
-  const f = new Set<string>()
-  if (forward) f.add('ascend')
-  if (back) f.add('descend')
-  if (left) f.add('left')
-  if (right) f.add('right')
-  if (jump) f.add('jumping')
-  if (sprint) f.add('sprinting')
-  if (sneak) f.add('sneaking')
-  return f
-}
-
-export function flagsToBits(f: Set<string> | string[]) {
-  const s = (f instanceof Set) ? f : new Set(f)
+): InputDataFlags {
   let bits = 0
-  if (s.has('jumping')) bits |= INPUT.JUMPING
-  if (s.has('sprinting')) bits |= INPUT.SPRINTING
-  if (s.has('sneaking')) bits |= INPUT.SNEAKING
-  if (s.has('ascend')) bits |= INPUT.ASCEND
-  if (s.has('descend')) bits |= INPUT.DESCEND
-  if (s.has('left')) bits |= INPUT.LEFT
-  if (s.has('right')) bits |= INPUT.RIGHT
-  return bits >>> 0
+
+  // Set basic movement flags based on observed packet analysis
+  if (forward) bits |= 0x1000000000000000 // forward movement flag
+  if (back) bits |= 0x2000000000000000 // backward movement flag
+  if (left) bits |= 0x4000000000000000 // left movement flag
+  if (right) bits |= 0x8000000000000000 // right movement flag
+  if (jump) bits |= INPUT.JUMPING
+  if (sprint) bits |= INPUT.SPRINTING
+  if (sneak) bits |= INPUT.SNEAKING
+
+  // Set block_breaking_delay_enabled (always true in observed packets)
+  bits |= 0x8000000000000000 // block_breaking_delay_enabled flag
+
+  return {
+    _value: bits.toString(),
+    ascend: forward,
+    descend: back,
+    north_jump: false,
+    jump_down: false,
+    sprint_down: false,
+    change_height: false,
+    jumping: jump,
+    auto_jumping_in_water: false,
+    sneaking: sneak,
+    sneak_down: false,
+    up: false,
+    down: false,
+    left: left,
+    right: right,
+    up_left: false,
+    up_right: false,
+    want_up: false,
+    want_down: false,
+    want_down_slow: false,
+    want_up_slow: false,
+    sprinting: sprint,
+    ascend_block: false,
+    descend_block: false,
+    sneak_toggle_down: false,
+    persist_sneak: false,
+    start_sprinting: false,
+    stop_sprinting: false,
+    start_sneaking: false,
+    stop_sneaking: false,
+    start_swimming: false,
+    stop_swimming: false,
+    start_jumping: false,
+    start_gliding: false,
+    stop_gliding: false,
+    item_interact: false,
+    block_action: false,
+    item_stack_request: false,
+    handled_teleport: false,
+    emoting: false,
+    missed_swing: false,
+    start_crawling: false,
+    stop_crawling: false,
+    start_flying: false,
+    stop_flying: false,
+    received_server_data: false,
+    client_predicted_vehicle: false,
+    paddling_left: false,
+    paddling_right: false,
+    block_breaking_delay_enabled: true,
+    horizontal_collision: false,
+    vertical_collision: false,
+    down_left: false,
+    down_right: false,
+    start_using_item: false,
+    camera_relative_movement_enabled: false,
+    rot_controlled_by_move_direction: false,
+    start_spin_attack: false,
+    stop_spin_attack: false,
+    hotbar_only_touch: false,
+    jump_released_raw: false,
+    jump_pressed_raw: false,
+    jump_current_raw: false,
+    sneak_released_raw: false,
+    sneak_pressed_raw: false,
+    sneak_current_raw: false
+  }
 }
 
 // --------- Random movement generator (world-space delta per tick @20Hz)
@@ -126,7 +188,7 @@ export function createRandomMoveVectorGenerator(opts: RandomMoverOptions = {}) {
   }
 }
 
-// --------- Build player_auth_input packet (camelCase keys for bedrock-protocol)
+// --------- Build player_auth_input packet (using proper types from analysis)
 export function buildAuthInputPacket(params: {
   currentPos: Vec3
   currentRot: Rotation
@@ -138,7 +200,7 @@ export function buildAuthInputPacket(params: {
   const { currentPos, currentRot, moveVector, tick, sprint = false, sneak = false } = params
 
   // 1) Advance position optimistically
-  const newPos: Vec3 = {
+  const newPos: Vector3D = {
     x: currentPos.x + moveVector.x,
     y: currentPos.y + moveVector.y,
     z: currentPos.z + moveVector.z
@@ -155,42 +217,58 @@ export function buildAuthInputPacket(params: {
 
   const newRot: Rotation = { pitch: pitchDeg, yaw: yawDeg, headYaw: yawDeg }
 
-  // 3) Local stick vector (strafe=X, forward=Y)
+  // 3) Local stick vector (strafe=X, forward=Z) - based on observed packet structure
   const forwardMag = Math.min(1, horizLen)
-  const moveVecLocal = { x: 0, y: forwardMag } // vec2f expected as {x,y}
+  const moveVecLocal: Vector2D = { x: 0, z: forwardMag } // vec2f expected as {x,z}
 
-  // 4) Input flag bits (forward if moving)
-  const f = inputFlags({ forward: horizLen > 1e-6, sprint, sneak })
-  const inputBits = flagsToBits(f)
+  // 4) Input data flags (using proper structure)
+  const inputData = createInputDataFlags({
+    forward: horizLen > 1e-6,
+    sprint,
+    sneak
+  })
 
-  // 5) Packet with snake_case keys as required by Bedrock protocol
+  // 5) Camera orientation (based on observed packets)
+  const cameraOrientation: Vector3D = {
+    x: Math.sin(yawDeg * Math.PI / 180) * Math.cos(pitchDeg * Math.PI / 180),
+    y: -Math.sin(pitchDeg * Math.PI / 180),
+    z: Math.cos(yawDeg * Math.PI / 180) * Math.cos(pitchDeg * Math.PI / 180)
+  }
+
+  // 6) Interaction rotation (based on observed packets)
+  const interactRotation: Vector2D = {
+    x: pitchDeg,
+    z: yawDeg
+  }
+
+  // 7) Packet with proper structure matching observed packets
   const packet = {
     // rotation & position
     position: newPos,                      // vec3f
     pitch: newRot.pitch,                   // lf32
     yaw: newRot.yaw,                       // lf32
-    head_yaw: newRot.headYaw,              // lf32 (snake_case)
+    head_yaw: newRot.headYaw,              // lf32
 
     // movement & inputs
-    move_vector: moveVecLocal,             // vec2f {x,y} (snake_case)
-    input_data: inputBits,                 // varint/bitset (snake_case)
-    input_mode: 0,                         // 0 = mouse/keyboard (snake_case)
-    play_mode: 0,                          // 0 = normal (snake_case)
-    interaction_model: 0,                  // (snake_case)
+    move_vector: moveVecLocal,             // vec2f {x,z}
+    analogue_move_vector: moveVecLocal,    // vec2f {x,z} - same as move_vector
+    raw_move_vector: moveVecLocal,         // vec2f {x,z} - same as move_vector
+    input_data: inputData,                 // InputDataFlags object
+    input_mode: "mouse" as InputMode,      // string enum
+    play_mode: "normal" as PlayMode,       // string enum
+    interaction_model: "touch" as InteractionModel, // string enum
 
     // look direction when interacting
-    interact_rotation: { x: newRot.pitch, y: newRot.yaw }, // vec2f (snake_case)
+    interact_rotation: interactRotation,   // vec2f {x,z}
 
     // timing
-    tick,                                  // varint64 (BigInt)
+    tick: tick.toString(),                 // string (varint64)
 
     // motion delta the client reports this tick
     delta: { x: moveVector.x, y: moveVector.y, z: moveVector.z }, // vec3f
 
-    // Required fields for Bedrock 1.21.111 protocol
-    analogue_move_vector: moveVecLocal,    // vec2f (snake_case) - REQUIRED!
-    camera_orientation: { x: 0, y: 0, z: 0 }, // vec3f (snake_case) - REQUIRED!
-    raw_move_vector: moveVecLocal          // vec2f (snake_case) - REQUIRED!
+    // Camera orientation (required field)
+    camera_orientation: cameraOrientation  // vec3f
   }
 
   return {

@@ -1,6 +1,7 @@
+import { type MovePlayer } from '../types/move_player';
+
 import { gameState } from '@/lib/GameState';
 import { log } from '@/lib/log';
-import { type MovePlayer } from '../types/move_player';
 
 
 const movePlayer = {

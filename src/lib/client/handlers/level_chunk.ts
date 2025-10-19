@@ -1,5 +1,5 @@
-import createRegistry from 'prismarine-registry';
 import createChunkColumn from 'prismarine-chunk';
+import createRegistry from 'prismarine-registry';
 
 // pick the protocol/version you need
 const registry = createRegistry('bedrock_1.21.111');

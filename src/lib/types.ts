@@ -7,7 +7,7 @@ export enum ItemStatus {
 }
 
 export type HistoryItem = {
-  timestamp: number;
+  timestamp: Date;
   status: ItemStatus;
 }
 

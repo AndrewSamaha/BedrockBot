@@ -1,6 +1,7 @@
-import { log } from '@/lib/log';
-import { gameState } from '@/lib/GameState';
 import set from 'lodash/set';
+
+import { gameState } from '@/lib/GameState';
+import { log } from '@/lib/log';
 
 const update_attributes = {
   name: 'update_attributes' as const,

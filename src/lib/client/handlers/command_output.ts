@@ -1,6 +1,4 @@
 import { log } from '@/lib/log';
-import { incomingMessageQueue } from '@/lib/queues';
-import { env } from '@/config/env';
 
 const command_output = {
   name: 'command_output' as const,
