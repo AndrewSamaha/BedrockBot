@@ -10,5 +10,6 @@ export const env = {
   BEDROCK_USERNAME: process.env.BEDROCK_USERNAME || `AgentBot0${Math.floor(Math.random() * 1000)}`,
   ADMIN_XUIDS: process.env.ADMIN_XUIDS?.split(',') || [],
   LOG_PATH: process.env.LOG_PATH,
+  LOG_MAX_FILES: Number(process.env.LOG_MAX_FILES || 5),
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
 };
