@@ -63,10 +63,10 @@ export function createInputDataFlags(
   if (sneak) bits |= INPUT.SNEAKING
 
   // Set block_breaking_delay_enabled (always true in observed packets)
-  bits |= 0x8000000000000000 // block_breaking_delay_enabled flag
+  bits |= 0x1000000000000 // block_breaking_delay_enabled flag (bit 48)
 
   return {
-    _value: bits.toString(),
+    _value: bits,
     ascend: forward,
     descend: back,
     north_jump: false,
@@ -215,7 +215,11 @@ export function buildAuthInputPacket(params: {
     ? normalizeAngleDeg(-toDegrees(Math.atan2(moveVector.y, horizLen)))     // up => negative
     : currentRot.pitch
 
-  const newRot: Rotation = { pitch: pitchDeg, yaw: yawDeg, headYaw: yawDeg }
+  // Head yaw can be different from body yaw (for looking around while moving)
+  const headYawDeg = (horizLen > 1e-6) 
+    ? normalizeAngleDeg(yawDeg + (Math.random() - 0.5) * 20) // Add some random head movement
+    : yawDeg
+  const newRot: Rotation = { pitch: pitchDeg, yaw: yawDeg, headYaw: headYawDeg }
 
   // 3) Local stick vector (strafe=X, forward=Z) - based on observed packet structure
   const forwardMag = Math.min(1, horizLen)
@@ -243,32 +247,46 @@ export function buildAuthInputPacket(params: {
 
   // 7) Packet with proper structure matching observed packets
   const packet = {
-    // rotation & position
-    position: newPos,                      // vec3f
-    pitch: newRot.pitch,                   // lf32
-    yaw: newRot.yaw,                       // lf32
-    head_yaw: newRot.headYaw,              // lf32
+    name: "player_auth_input",
+    params: {
+      // rotation & position
+      position: newPos,                      // vec3f
+      pitch: newRot.pitch,                   // lf32
+      yaw: newRot.yaw,                       // lf32
+      head_yaw: newRot.headYaw,              // lf32
 
-    // movement & inputs
-    move_vector: moveVecLocal,             // vec2f {x,z}
-    analogue_move_vector: moveVecLocal,    // vec2f {x,z} - same as move_vector
-    raw_move_vector: moveVecLocal,         // vec2f {x,z} - same as move_vector
-    input_data: inputData,                 // InputDataFlags object
-    input_mode: "mouse" as InputMode,      // string enum
-    play_mode: "normal" as PlayMode,       // string enum
-    interaction_model: "touch" as InteractionModel, // string enum
+      // movement & inputs
+      move_vector: moveVecLocal,             // vec2f {x,z}
+      analogue_move_vector: moveVecLocal,    // vec2f {x,z} - same as move_vector
+      raw_move_vector: moveVecLocal,         // vec2f {x,z} - same as move_vector
+      input_data: inputData,                 // InputDataFlags object
+      input_mode: "mouse" as InputMode,      // string enum
+      play_mode: "normal" as PlayMode,       // string enum
+      interaction_model: "touch" as InteractionModel, // string enum
 
-    // look direction when interacting
-    interact_rotation: interactRotation,   // vec2f {x,z}
+      // look direction when interacting
+      interact_rotation: interactRotation,   // vec2f {x,z}
 
-    // timing
-    tick: tick.toString(),                 // string (varint64)
+      // timing
+      tick: tick,                            // BigInt (varint64)
 
-    // motion delta the client reports this tick
-    delta: { x: moveVector.x, y: moveVector.y, z: moveVector.z }, // vec3f
+      // motion delta the client reports this tick
+      delta: { x: moveVector.x, y: moveVector.y, z: moveVector.z }, // vec3f
 
-    // Camera orientation (required field)
-    camera_orientation: cameraOrientation  // vec3f
+      // Camera orientation (required field)
+      camera_orientation: cameraOrientation  // vec3f
+    }
+  }
+
+  // Debug: Check for undefined values
+  if (!packet.params.position || typeof packet.params.position.x !== 'number') {
+    console.error('Position is invalid:', packet.params.position);
+  }
+  if (!packet.params.delta || typeof packet.params.delta.x !== 'number') {
+    console.error('Delta is invalid:', packet.params.delta);
+  }
+  if (!packet.params.camera_orientation || typeof packet.params.camera_orientation.x !== 'number') {
+    console.error('Camera orientation is invalid:', packet.params.camera_orientation);
   }
 
   return {

@@ -1,4 +1,7 @@
-This project uses pnpm and typescript. When importing types, be sure to use `import type ...` or `import { type ... } ...`
+This project uses pnpm. Use `pnpm build` and `pnpm start` when building and starting. Do NOT uses `npn`.
+
+
+typescript. When importing types, be sure to use `import type ...` or `import { type ... } ...`
 
 The node version is set it .nvmrc and can be activated by running `fnm` in the project root.
 

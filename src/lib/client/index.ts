@@ -1,6 +1,3 @@
-import { readdir } from 'fs/promises';
-import { dirname, join, extname } from 'path';
-import { fileURLToPath } from 'url';
 
 // Define handler type
 export interface ClientHandler {
@@ -8,49 +5,49 @@ export interface ClientHandler {
   fn: (...args: any[]) => void | Promise<void>;
 }
 
-// Function to dynamically load all handlers
-async function loadHandlers(): Promise<ClientHandler[]> {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  const handlersDir = join(__dirname, 'handlers');
-  
-  console.log('Loading handlers from:', handlersDir);
-  
-  // Read all files in the handlers directory
-  const files = await readdir(handlersDir);
-  console.log('Found files:', files);
-  
-  // Filter for TypeScript files
-  const handlerFiles = files.filter(file => extname(file) === '.ts');
-  console.log('TypeScript handler files:', handlerFiles);
-  
-  const handlers: ClientHandler[] = [];
-  
-  for (const file of handlerFiles) {
-    try {
-      // Import the handler file dynamically
-      const handlerModule = await import(`./handlers/${file}`);
-      
-      // Check if the module has a default export
-      if (handlerModule.default) {
-        console.log(`Loaded handler: ${file} -> ${handlerModule.default.name}`);
-        handlers.push(handlerModule.default);
-      } else {
-        console.warn(`Handler file ${file} does not have a default export`);
-      }
-    } catch (error) {
-      console.error(`Failed to load handler ${file}:`, error);
-    }
-  }
+// Import all handlers statically
+import addPlayer from './handlers/add_player.js';
+import availableCommands from './handlers/available_commands.js';
+import commandOutput from './handlers/command_output.js';
+import connect from './handlers/connect.js';
+import error from './handlers/error.js';
+import gameRulesChanged from './handlers/game_rules_changed.js';
+import levelChunk from './handlers/level_chunk.js';
+import movePlayer from './handlers/move_player.js';
+import resourcePacks from './handlers/resource_packs.js';
+import setCommandsEnabled from './handlers/set_commands_enabled.js';
+import spawn from './handlers/spawn.js';
+import startGame from './handlers/start_game.js';
+import text from './handlers/text.js';
+import updateAttributes from './handlers/update_attributes.js';
+
+// Function to load all handlers statically
+function loadHandlers(): ClientHandler[] {
+  const handlers: ClientHandler[] = [
+    addPlayer,
+    availableCommands,
+    commandOutput,
+    connect,
+    error,
+    gameRulesChanged,
+    levelChunk,
+    movePlayer,
+    resourcePacks,
+    setCommandsEnabled,
+    spawn,
+    startGame,
+    text,
+    updateAttributes
+  ];
   
   console.log(`Successfully loaded ${handlers.length} handlers`);
   return handlers;
 }
 
 // Function to register all handlers with a client
-export const registerClientHandlers = async (client: any) => {
-  // Load handlers dynamically
-  const handlers = await loadHandlers();
+export const registerClientHandlers = (client: any) => {
+  // Load handlers statically
+  const handlers = loadHandlers();
   
   handlers.forEach((handler) => {
     if (handler.name === 'resource_packs_info__XX') {

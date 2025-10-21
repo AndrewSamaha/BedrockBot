@@ -1,4 +1,4 @@
-import set from 'lodash/set';
+import _ from 'lodash';
 
 import { gameState } from '@/lib/GameState';
 import { log } from '@/lib/log';
@@ -9,7 +9,7 @@ const update_attributes = {
     log({ packet });
     if (gameState.runtimeEntityId == packet.runtime_entity_id) {
       packet.attributes?.forEach((attribute) => {
-        set(gameState.attributes, attribute.name, attribute)
+        _.set(gameState.attributes, attribute.name, attribute)
       })
       return;
     }

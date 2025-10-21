@@ -51,7 +51,7 @@ setInterval(async () => {
     return;
   }
 
-  if (nextMessage.getStatus() === ItemStatus.RECEIVED) {
+  if (nextMessage?.getStatus() === ItemStatus.RECEIVED) {
     const { packet } = nextMessage;
     const packetData = packet as any;
     if (packetData.type.toLowerCase() === 'chat') {
@@ -75,14 +75,14 @@ setInterval(async () => {
         nextMessage.markSuccess(undefined);
         return;
       }
-      nextMessage.markSuccess(undefined);
+      nextMessage?.markSuccess(undefined);
       return;
     }
-    nextMessage.markSuccess(undefined);
+    nextMessage?.markSuccess(undefined);
     return;
   }
 
-  if (nextMessage && nextMessage.getStatus() === ItemStatus.PROCESSING) {
+  if (nextMessage?.getStatus() === ItemStatus.PROCESSING) {
     const packet = nextMessage.packet as any;
     const client = packet.getClient() as Client;
     const isAdmin = (packet.xuid && admins.includes(packet.xuid));
@@ -109,7 +109,7 @@ setInterval(async () => {
       command: command_text,   // "fill 0 64 0 10 64 10 stone"
       origin: {
         type: 0,                   // 0 = player
-        uuid: client.profile?.uuid || client.uuid || '00000000-0000-0000-0000-000000000000',
+        uuid: (client as any).profile?.uuid || (client as any).uuid || '00000000-0000-0000-0000-000000000000',
         request_id: `${Math.floor(Math.random() * 100_100)}`,
         player_entity_id: gameState.runtimeEntityId
       },
@@ -150,7 +150,7 @@ bedrock.ping({ host, port }).then(async res => {
   });
 
   // Register all client event handlers
-  await registerClientHandlers(client);
+  registerClientHandlers(client);
 
 }).catch(err => {
   console.error('Ping failed:', err);

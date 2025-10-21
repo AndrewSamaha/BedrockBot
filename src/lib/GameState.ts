@@ -1,4 +1,5 @@
 import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement.js'
+import { log } from './log.js'
 
 const TIC_INTERVAL = 50;
 
@@ -70,6 +71,15 @@ class GameState {
   }
 
   randomMove() {
+    // Check if we have a valid position before trying to move
+    if (!this.playerPosition || typeof this.playerPosition !== 'object' || 
+        typeof this.playerPosition.x !== 'number' || 
+        typeof this.playerPosition.y !== 'number' || 
+        typeof this.playerPosition.z !== 'number') {
+      console.log('No valid position available for movement');
+      return;
+    }
+
     const moveVector = this.nextRandomMove();
     const { newState, packet } = buildAuthInputPacket({
       currentPos: this.playerPosition,
@@ -89,8 +99,8 @@ class GameState {
     this.yaw = newState.rotation.yaw;
     this.headYaw = newState.rotation.headYaw || 0;
 
-    //log({ player_auth_input: packet });
-    this.client.queue('player_auth_input', packet);
+    log({ player_auth_input: packet });
+    this.client.queue('player_auth_input', packet.params);
   }
 
   setPositionFromServer({ position, pitch, yaw, head_yaw }: any) {
