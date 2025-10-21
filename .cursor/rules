@@ -1,0 +1,12 @@
+This project uses pnpm and typescript. When importing types, be sure to use `import type ...` or `import { type ... } ...`
+
+The node version is set it .nvmrc and can be activated by running `fnm` in the project root.
+
+The intention here is to build a Minecraft Bedrock bot. Documentation about the minecraft-bedrock
+protocol can be found in docs/
+
+Logs from the lastest few runs can be found in logs/
+
+When testing the application it will often not exit by itself automatically, hence it is often helpful to terminate the application
+after 10-20 seconds.
+
