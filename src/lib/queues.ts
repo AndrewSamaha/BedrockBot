@@ -1,4 +1,4 @@
-import { ItemStatus, type HistoryItem, type UnknownObject } from './types';
+import { ItemStatus, type HistoryItem, type UnknownObject } from './types.js';
 
 class QueueItem {
   packet: UnknownObject;
@@ -14,13 +14,13 @@ class QueueItem {
   updateStatus(status: ItemStatus) {
     this.history.push({ timestamp: new Date(), status });
   }
-  markProcessing(result: UnknowObject | undefined) {
+  markProcessing(result: UnknownObject | undefined) {
     if (result) {
       this.result = result;
     }
     this.updateStatus(ItemStatus.PROCESSING);
   }
-  markSuccess(result: UnknowObject | undefined) {
+  markSuccess(result: UnknownObject | undefined) {
     if (result) {
       this.result = result;
     }
@@ -32,7 +32,7 @@ class QueueItem {
   markTimeout() {
     this.updateStatus(ItemStatus.TIMED_OUT);
   }
-  getStatus(timeout?): ItemStatus {
+  getStatus(timeout?: number): ItemStatus {
     const lastStatus = this.history[this.history.length - 1].status;
     if (lastStatus === ItemStatus.RECEIVED && timeout) {
       if (new Date() >= lastStatus.timestamp + timeout) {
@@ -46,9 +46,9 @@ class QueueItem {
 
 class Queue {
   name: string;
-  processingTimeout: number;
+  processingTimeout: number = 0;
   messages: QueueItem[] = [];
-  processCallback: () => {};
+  processCallback: (() => void) | undefined;
   defaultTimeout: number;
 
   constructor(name: string, timeout = 30_000) {
@@ -56,13 +56,13 @@ class Queue {
     this.defaultTimeout = timeout;
   }
 
-  push(packet: UnknownObject): QueueItem[] {
+  push(packet: UnknownObject): void {
     this.messages.push(new QueueItem(packet));
   }
 
   // gets the next item in the queue that is either processing or received
   getNextMessage(): QueueItem | null {
-    return this.messages.find((item) => item.getStatus(this.defaultTimeout) === ItemStatus.RECEIVED || item.getStatus(this.defaultTimeout) === ItemStatus.PROCESSING);
+    return this.messages.find((item) => item.getStatus(this.defaultTimeout) === ItemStatus.RECEIVED || item.getStatus(this.defaultTimeout) === ItemStatus.PROCESSING) || null;
   }
 
   getNumMessages(statusTypes?: ItemStatus[] | undefined): number {

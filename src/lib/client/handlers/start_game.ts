@@ -1,5 +1,5 @@
-import { log } from '@/lib/log';
 import { gameState } from '@/lib/GameState';
+import { log } from '@/lib/log';
 
 function sendCommand(client: any, command: string) {
   client.queue('command_request', {

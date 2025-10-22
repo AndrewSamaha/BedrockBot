@@ -1,6 +1,7 @@
+import { type MovePlayer } from '../types/move_player';
+
 import { gameState } from '@/lib/GameState';
 import { log } from '@/lib/log';
-import { type MovePlayer } from '../types/move_player';
 
 
 const movePlayer = {
@@ -11,7 +12,7 @@ const movePlayer = {
     gameState.setTick(packet);
     if (packet?.runtime_id == gameState.runtime_entity_id) {
       log({ move_player: packet })
-      gameState.setPosition({
+      gameState.setPositionFromServer({
         position: packet.position,
         yaw: packet.yaw,
         pitch: packet.pitch,

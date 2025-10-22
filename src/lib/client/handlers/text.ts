@@ -1,6 +1,6 @@
+import { env } from '@/config/env';
 import { log } from '@/lib/log';
 import { incomingMessageQueue } from '@/lib/queues';
-import { env } from '@/config/env';
 
 const text = {
   name: 'text' as const,

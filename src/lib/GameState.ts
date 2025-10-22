@@ -1,5 +1,5 @@
-import { log } from './log';
-import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement'
+import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement.js'
+import { log } from './log.js'
 
 const TIC_INTERVAL = 50;
 
@@ -7,7 +7,7 @@ class GameState {
   playerPosition: unknown;
   pitch: number | undefined;
   yaw: number | undefined;
-  head_yaw: number | undefined;
+  headYaw: number | undefined;
   rotation: unknown;
   entityId: number | undefined;
   runtimeEntityId: number | undefined;
@@ -17,7 +17,7 @@ class GameState {
   spawned: boolean;
   seed: string | undefined;
   currentTick: bigint | undefined;
-  nextRandomMove: () => {};
+  nextRandomMove: void;
   commandsEnabled: boolean | undefined;
   gameRules: unknown | undefined;
   attributes: unknown | undefined;
@@ -28,7 +28,7 @@ class GameState {
   constructor() {
     this.spawned = false;
     this.lastTic = 0;
-    this.head_yaw = 0;
+    this.headYaw = 0;
     this.nextRandomMove = createRandomMoveVectorGenerator({
       maxSpeedBps: 4.3,
       wanderPerTick: 0.10,
@@ -36,7 +36,7 @@ class GameState {
     });
   }
 
-  startGame(client: unknown, packet: unknown) {
+  startGame(client: unknown, packet: any) {
     this.client = client;
     if (this.spawned) {
       return;
@@ -46,7 +46,7 @@ class GameState {
     this.seed = packet?.seed;
     this.entityId = packet?.entity_id;
     this.runtimeEntityId = packet?.runtime_entity_id;
-    this.playerPosition = packet?.player_position;
+    this.playerPosition = packet?.player_position as Vec3;
     this.rotation = packet?.rotation;
     this.permissionLevel = packet?.permission_level;
     this.currentTick = packet?.current_tick;
@@ -71,13 +71,22 @@ class GameState {
   }
 
   randomMove() {
+    // Check if we have a valid position before trying to move
+    if (!this.playerPosition || typeof this.playerPosition !== 'object' || 
+        typeof this.playerPosition.x !== 'number' || 
+        typeof this.playerPosition.y !== 'number' || 
+        typeof this.playerPosition.z !== 'number') {
+      console.log('No valid position available for movement');
+      return;
+    }
+
     const moveVector = this.nextRandomMove();
     const { newState, packet } = buildAuthInputPacket({
       currentPos: this.playerPosition,
       currentRot: {
-        yaw: this.yaw,
-        pitch: this.pitch,
-        head_yaw: this.head_yaw || 0,
+        yaw: this.yaw || 0,
+        pitch: this.pitch || 0,
+        head_yaw: this.headYaw || 0,
       },
       moveVector,
       tick: this.currentTick ? this.currentTick + 1n : 0n,
@@ -88,20 +97,20 @@ class GameState {
     this.playerPosition = newState.position;
     this.pitch = newState.rotation.pitch;
     this.yaw = newState.rotation.yaw;
-    this.head_yaw = newState.rotation.head_yaw || 0;
+    this.headYaw = newState.rotation.headYaw || 0;
 
-    //log({ player_auth_input: packet });
-    this.client.queue('player_auth_input', packet);
+    log({ player_auth_input: packet });
+    this.client.queue('player_auth_input', packet.params);
   }
 
-  setPositionFromServer({ position, pitch, yaw, head_yaw }) {
+  setPositionFromServer({ position, pitch, yaw, head_yaw }: any) {
     this.playerPosition = position;
     this.pitch = pitch;
     this.yaw = yaw;
-    this.head_yaw = head_yaw;
+    this.headYaw = head_yaw;
   }
 
-  move(newPosition, newRotation) {
+  move(newPosition: any, newRotation: any) {
     // Check if we have a valid runtime entity ID
     if (!this.runtimeEntityId) {
       console.error('Cannot move: runtimeEntityId is not set');
@@ -128,8 +137,8 @@ class GameState {
   tic() {
     if (this.currentTick % 50n === 0n) {
       const { x, y, z } = this.playerPosition;
-      const { yaw, pitch, head_yaw } = this;
-      console.log(`${this.currentTick} - ${new Date().toISOString()} - ${x}, ${y}, ${z} - ${yaw} ${pitch} ${head_yaw}`);
+      const { yaw, pitch, headYaw } = this;
+      console.log(`${this.currentTick} - ${new Date().toISOString()} - ${x}, ${y}, ${z} - ${yaw} ${pitch} ${headYaw}`);
     }
     this.lastTic = Date.now();
     // Add your tic logic here
@@ -154,7 +163,7 @@ class GameState {
     return this.ticInterval !== null;
   }
 
-  setTick(packet: unknown) {
+  setTick(packet: any) {
     this.currentTick = packet?.tick;
     //this.position = position;
     //console.log({ currentTick: this.currentTick })

@@ -1,6 +1,6 @@
-import { log } from '@/lib/log';
 import { gameState } from '@/lib/GameState'
   ;
+import { log } from '@/lib/log';
 const game_rules_changed = {
   name: 'game_rules_changed' as const,
   fn: (packet: any, client: any) => {

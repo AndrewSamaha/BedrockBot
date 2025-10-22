@@ -1,5 +1,5 @@
-import { log } from '@/lib/log';
 import { gameState } from '@/lib/GameState';
+import { log } from '@/lib/log';
 
 const spawn = {
   name: 'spawn' as const,
