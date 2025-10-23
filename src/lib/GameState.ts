@@ -1,5 +1,5 @@
-import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement.js'
 import { log } from './log.js'
+import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement.js'
 
 const TIC_INTERVAL = 50;
 
@@ -53,6 +53,42 @@ class GameState {
     this.startTic();
   }
 
+  playerHasDied() {
+    this.spawned = false;
+    setTimeout(() => {
+      console.log(`Sending respawn command for runtimeEntityId ${gameState.runtimeEntityId}`)
+      this.client.write('respawn',  {
+        position: {
+          x: 0,
+          y: 0,
+          z: 0
+        } ,
+        state: 2,
+        runtime_entity_id: `${gameState.runtimeEntityId}`
+      });
+    }, 1500);
+
+
+    setTimeout(() => {
+      console.log(`Sending player_action command for runtimeEntityId ${gameState.runtimeEntityId}`);
+      this.client.write('player_action', {
+        runtime_entity_id: `${gameState.runtimeEntityId}`,
+        action: 7,
+        position: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        result_position: {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        face: -1
+      });
+    }, 2500);
+  }
+
   spawn() {
     this.spawned = true;
   }
@@ -72,9 +108,9 @@ class GameState {
 
   randomMove() {
     // Check if we have a valid position before trying to move
-    if (!this.playerPosition || typeof this.playerPosition !== 'object' || 
-        typeof this.playerPosition.x !== 'number' || 
-        typeof this.playerPosition.y !== 'number' || 
+    if (!this.playerPosition || typeof this.playerPosition !== 'object' ||
+        typeof this.playerPosition.x !== 'number' ||
+        typeof this.playerPosition.y !== 'number' ||
         typeof this.playerPosition.z !== 'number') {
       console.log('No valid position available for movement');
       return;
@@ -142,11 +178,10 @@ class GameState {
     }
     this.lastTic = Date.now();
     // Add your tic logic here
-    if (this.playerPosition) {
+    if (this.playerPosition && this.spawned) {
       this.randomMove();
       return;
     }
-    console.log(`Tic executed at ${new Date().toISOString()} - no position reported`);
   }
 
   // Method to stop the tic interval (useful for cleanup)

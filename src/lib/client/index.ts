@@ -10,6 +10,7 @@ import addPlayer from './handlers/add_player.js';
 import availableCommands from './handlers/available_commands.js';
 import commandOutput from './handlers/command_output.js';
 import connect from './handlers/connect.js';
+import deathInfo from './handlers/death_info';
 import error from './handlers/error.js';
 import gameRulesChanged from './handlers/game_rules_changed.js';
 import levelChunk from './handlers/level_chunk.js';
@@ -28,6 +29,7 @@ function loadHandlers(): ClientHandler[] {
     availableCommands,
     commandOutput,
     connect,
+    deathInfo,
     error,
     gameRulesChanged,
     levelChunk,
@@ -39,7 +41,7 @@ function loadHandlers(): ClientHandler[] {
     text,
     updateAttributes
   ];
-  
+
   console.log(`Successfully loaded ${handlers.length} handlers`);
   return handlers;
 }
@@ -48,17 +50,8 @@ function loadHandlers(): ClientHandler[] {
 export const registerClientHandlers = (client: any) => {
   // Load handlers statically
   const handlers = loadHandlers();
-  
+
   handlers.forEach((handler) => {
-    if (handler.name === 'resource_packs_info__XX') {
-      // Special case for once() handler
-      client.once(handler.name, (packet: any) => handler.fn(packet, client));
-    } else if (handler.name === 'start_game' || handler.name === 'text') {
-      // Handlers that need the client instance
-      client.on(handler.name, (packet: any) => handler.fn(packet, client));
-    } else {
-      // Regular handlers
-      client.on(handler.name, handler.fn);
-    }
+    client.on(handler.name, (packet: any) => handler.fn(packet, client));
   });
 };
