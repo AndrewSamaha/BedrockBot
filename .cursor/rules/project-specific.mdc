@@ -1,0 +1,11 @@
+---
+description: Minecraft Bedrock bot domain rules
+globs: ["src/**", "docs/**", "logs/**"]
+alwaysApply: true
+---
+
+- **Domain focus**: This repository implements a Minecraft Bedrock bot. Design choices should respect Bedrock gameplay and protocol expectations.
+- **Protocol references**: Consult the documentation in `docs/`, especially `docs/minecraft-protocols/data_documentation.pdf`, when handling packets.
+- **Data samples**: Use `docs/log_samples/` for canonical examples of packet flows and player interactions.
+- **Logging**: Bot runs emit timestamped JSON logs in `logs/`. Review them to understand behavior and diagnose issues.
+- **Key dependencies**: Code integrates `bedrock-protocol`, Prismarine libraries, and LangChain-based integrations. Respect their abstractions instead of reimplementing core logic.

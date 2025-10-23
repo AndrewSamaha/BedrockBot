@@ -1,0 +1,10 @@
+---
+description: TypeScript style and import rules
+globs: ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"]
+alwaysApply: true
+---
+
+- **Type imports**: Always import types using `import type { Foo } from './module'` or `import { type Foo } from './module'` to separate type-only references from runtime code.
+- **Explicit typing**: Avoid `any`; leverage TypeScript's strict mode and available type definitions (for Node, bedrock-protocol, etc.).
+- **Project conventions**: Follow existing folder structure under `src/` and reuse established patterns for configs and libraries.
+- **Consistency**: Match surrounding style, including naming conventions and module organization.

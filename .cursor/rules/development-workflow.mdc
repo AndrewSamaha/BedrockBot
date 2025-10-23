@@ -1,0 +1,11 @@
+---
+description: Development workflow and runtime habits
+globs: ["src/**", "test/**", "logs/**", "docs/**"]
+alwaysApply: true
+---
+
+- **Runtime behavior**: The bot often keeps the process alive. Expect to terminate manually after 10-20 seconds when testing.
+- **Manual shutdown**: Use `Ctrl+C` (SIGINT) or your process manager to stop development runs.
+- **Testing**: Run `pnpm test` (Vitest). For runs that may hang, prefer `pnpm dev:autostop` which times out after 30 seconds.
+- **Observability**: Inspect recent logs under `logs/` for debugging. Timestamped files capture the latest sessions.
+- **Quality gates**: Use `pnpm lint`, `pnpm lint:fix`, `pnpm format`, and `pnpm format:write` to maintain code quality.

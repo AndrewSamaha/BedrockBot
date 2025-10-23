@@ -1,0 +1,11 @@
+---
+description: Build and package management conventions
+globs: ["package.json", "pnpm-workspace.yaml", "scripts/**", "**/*.ts", "**/*.tsx"]
+alwaysApply: true
+---
+
+- **Package manager**: Use `pnpm` for all dependency and script operations. Build with `pnpm build` and start with `pnpm start`. Never use `npm` in this project.
+- **Node version**: The required Node version lives in `.nvmrc`. Run `fnm` in the repository root to activate it before running commands.
+- **Development scripts**: `pnpm dev`, `pnpm dev:watch`, and `pnpm dev:autostop` are the primary development entry points.
+- **Build pipeline**: `pnpm build` produces distributables in `dist/`; `pnpm start` executes the compiled output.
+- **Cleanup**: Use `pnpm clean` to remove `dist/` when builds behave unexpectedly.
