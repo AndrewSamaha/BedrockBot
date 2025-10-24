@@ -131,11 +131,21 @@ class Logger {
     }
   }
 
+  private shouldLog(obj: UnknownObject): boolean {
+    const exclude = Object.keys(obj).filter((key) => env.LOG_EXCLUDE_PACKETS.includes(key)).length >= 1;
+    const include = Object.keys(obj).filter((key) => env.LOG_INCLUDE_PACKETS.includes(key)).length >= 1;
+    if (include) return true;
+    if (exclude) return false;
+    return true;
+  }
+
   public log(obj: UnknownObject): void {
     // Initialize if not already done
     if (!this.isInitialized) {
       this.initialize();
     }
+
+    if (!this.shouldLog(obj)) return;
 
     const logObj = { timestamp: new Date(), ...obj };
     console.log(logObj);

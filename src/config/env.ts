@@ -11,5 +11,7 @@ export const env = {
   ADMIN_XUIDS: process.env.ADMIN_XUIDS?.split(',') || [],
   LOG_PATH: process.env.LOG_PATH,
   LOG_MAX_FILES: Number(process.env.LOG_MAX_FILES || 5),
+  LOG_INCLUDE_PACKETS: process.env.LOG_INCLUDE_PACKETS?.split(',') || [],
+  LOG_EXCLUDE_PACKETS: process.env.LOG_EXCLUDE_PACKETS?.split(',') || [],
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
 };
