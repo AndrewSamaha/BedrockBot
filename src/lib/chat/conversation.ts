@@ -13,7 +13,6 @@ export class Conversation {
   lastSpeaker: Speaker | undefined;
 
   constructor(systemPrompt: string, humanSpeaker: string, message: string) {
-    this.messages = [message];
     this.humanSpeaker = humanSpeaker;
     this.lastMessageTime = Date.now();
     this.systemPrompt = new SystemMessage(systemPrompt);
@@ -36,6 +35,17 @@ export class Conversation {
     this.lastSpeaker = 'ai';
   }
 
+  getTrimmedMessages(lastN: number = 50): BaseMessage[] {
+    if (this.messages.length <= lastN) return this.messages;
+    return this.messages.reduce((acc, cur, idx, array) => {
+      if (idx == 0) return [cur];
+      if (idx <= array.length - lastN) return acc;
+      return [
+        ...acc,
+        cur
+      ];
+    }, []);
+  }
 }
 
 export class ConversationManager {
@@ -47,10 +57,11 @@ export class ConversationManager {
     this.botName = botName;
     this.conversations = [];
     this.chatModel = new ChatOpenAI({
-      temperature: 1, // gpt-5-nano only supports a temp of 1
+      temperature: 0.75, // gpt-5-nano only supports a temp of 1
       maxTokens: 100,
       //modelName: "gpt-3.5-turbo",
-      modelName: "gpt-4.1-nano"
+      modelName: "gpt-4.1-nano",
+      //modelName: "gpt-5-nano" // always produces an empty response?
     });
 
 
@@ -93,8 +104,40 @@ export class ConversationManager {
   }
 
   async generateChatResponse(conversation: Conversation) {
-    const response = await this.chatModel.invoke(conversation.messages);
-    log({ generateChatResponse: { conversation, response }});
+    const messages = conversation.getTrimmedMessages();
+    const response = await this.chatModel.invoke(messages);
+    /*
+    {
+      "id": "chatcmpl-CUzMZrAoaBjuxxS2Gvu8hRZZ9mycj",
+      "content": "",
+      "additional_kwargs": {},
+      "response_metadata": {
+        "tokenUsage": {
+          "promptTokens": 238,
+          "completionTokens": 100,
+          "totalTokens": 338
+        },
+        "finish_reason": "length",
+        "model_name": "gpt-5-nano-2025-08-07"
+      },
+      "tool_calls": [],
+      "invalid_tool_calls": [],
+      "usage_metadata": {
+        "output_tokens": 100,
+        "input_tokens": 238,
+        "total_tokens": 338,
+        "input_token_details": {
+          "audio": 0,
+          "cache_read": 0
+        },
+        "output_token_details": {
+          "audio": 0,
+          "reasoning": 100
+        }
+      }
+    }
+    */
+    log({ generateChatResponse: { conversation, messagesLength: messages.length, response }});
     const chatResponse = response.content;
     conversation.pushAiMsg(chatResponse)
     return chatResponse;
