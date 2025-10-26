@@ -1,5 +1,6 @@
 import { ConversationManager } from './chat/conversation.js';
 import { log } from './log.js';
+import { botConfig } from '@/config/bot'
 import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement.js'
 
 import { env } from '@/config/env';
@@ -33,11 +34,7 @@ class GameState {
     this.spawned = false;
     this.lastTic = 0;
     this.headYaw = 0;
-    this.nextRandomMove = createRandomMoveVectorGenerator({
-      maxSpeedBps: 4.3,
-      wanderPerTick: 0.10,
-      friction: 0.14
-    });
+    this.nextRandomMove = createRandomMoveVectorGenerator(botConfig.movement);
     this.conversationManager = new ConversationManager(env.BEDROCK_USERNAME);
   }
 
