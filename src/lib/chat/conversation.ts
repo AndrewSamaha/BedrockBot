@@ -12,7 +12,7 @@ export class Conversation {
   systemPrompt: SystemMessage;
   lastSpeaker: Speaker | undefined;
 
-  constructor(systemPrompt: string, humanSpeaker: string, message: BaseMessage) {
+  constructor(systemPrompt: string, humanSpeaker: string, message: string) {
     this.messages = [message];
     this.humanSpeaker = humanSpeaker;
     this.lastMessageTime = Date.now();
@@ -26,6 +26,7 @@ export class Conversation {
 
   pushHumanMsg(message: string) {
     this.messages.push(new HumanMessage(`${this.humanSpeaker}: ${message}`));
+    log({ pushHumanMsg: this.messages[this.messages.length - 1]});
     this.lastMessageTime = Date.now();
     this.lastSpeaker = 'human';
   }
@@ -85,7 +86,7 @@ export class ConversationManager {
     `;
 
 
-    const conversation = new Conversation(systemPrompt, speaker, new HumanMessage(`${speaker}: ${message}`));
+    const conversation = new Conversation(systemPrompt, speaker, message);
     log({newConversation: { speaker, message }});
     this.conversations.push(conversation);
     return conversation;
@@ -93,9 +94,9 @@ export class ConversationManager {
 
   async generateChatResponse(conversation: Conversation) {
     const response = await this.chatModel.invoke(conversation.messages);
+    log({ generateChatResponse: { conversation, response }});
     const chatResponse = response.content;
     conversation.pushAiMsg(chatResponse)
-    log({ chatResponse });
     return chatResponse;
   }
 }

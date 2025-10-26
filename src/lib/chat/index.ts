@@ -23,7 +23,6 @@ const say = (client: Client, username: string, message: string) => {
     message
   };
 
-  log({ outgoingItem });
   client.queue("text", outgoingItem);
 }
 
@@ -57,7 +56,6 @@ export function initializeChatPipeline({ username, admins }: InitializeChatPipel
           if (chatResponse) {
             say(client, username as string, chatResponse);
             nextMessage.markSuccess({ chatResponse });
-            log({ chatResponse });
           } else {
             log({ error: "Chat response was null" });
             log({ chatResponse });
