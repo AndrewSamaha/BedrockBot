@@ -1,9 +1,13 @@
-import { log } from './log.js'
+import { ConversationManager } from './chat/conversation.js';
+import { log } from './log.js';
 import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement.js'
+
+import { env } from '@/config/env';
 
 const TIC_INTERVAL = 50;
 
 class GameState {
+  private static instance: GameState | null = null;
   playerPosition: unknown;
   pitch: number | undefined;
   yaw: number | undefined;
@@ -21,11 +25,11 @@ class GameState {
   commandsEnabled: boolean | undefined;
   gameRules: unknown | undefined;
   attributes: unknown | undefined;
-
+  conversationManager: undefined | ConversationManager;
 
   private ticInterval: NodeJS.Timeout | null = null;
 
-  constructor() {
+  private constructor() {
     this.spawned = false;
     this.lastTic = 0;
     this.headYaw = 0;
@@ -34,6 +38,15 @@ class GameState {
       wanderPerTick: 0.10,
       friction: 0.14
     });
+    this.conversationManager = new ConversationManager(env.BEDROCK_USERNAME);
+  }
+
+  static getInstance(): GameState {
+    if (!GameState.instance) {
+      GameState.instance = new GameState();
+    }
+
+    return GameState.instance;
   }
 
   startGame(client: unknown, packet: any) {
@@ -56,7 +69,7 @@ class GameState {
   playerHasDied() {
     this.spawned = false;
     setTimeout(() => {
-      console.log(`Sending respawn command for runtimeEntityId ${gameState.runtimeEntityId}`)
+      console.log(`Sending respawn command for runtimeEntityId ${this.runtimeEntityId}`)
       this.client.write('respawn',  {
         position: {
           x: 0,
@@ -64,15 +77,15 @@ class GameState {
           z: 0
         } ,
         state: 2,
-        runtime_entity_id: `${gameState.runtimeEntityId}`
+        runtime_entity_id: `${this.runtimeEntityId}`
       });
     }, 1500);
 
 
     setTimeout(() => {
-      console.log(`Sending player_action command for runtimeEntityId ${gameState.runtimeEntityId}`);
+      console.log(`Sending player_action command for runtimeEntityId ${this.runtimeEntityId}`);
       this.client.write('player_action', {
-        runtime_entity_id: `${gameState.runtimeEntityId}`,
+        runtime_entity_id: `${this.runtimeEntityId}`,
         action: 7,
         position: {
           x: 0,
@@ -205,5 +218,5 @@ class GameState {
   }
 }
 
-export const gameState = new GameState();
+export const gameState = GameState.getInstance();
 

@@ -1,5 +1,3 @@
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
 import type { Client } from "bedrock-protocol";
 
 import { gameState } from "@/lib/GameState";
@@ -14,22 +12,22 @@ type InitializeChatPipelineParams = {
 
 const POLL_INTERVAL_MS = 2_000;
 
-export function initializeChatPipeline({ username, admins }: InitializeChatPipelineParams): NodeJS.Timeout {
-  const systemMessage = new SystemMessage(`
-You the playful and capricious diety named ${username} in the world of Minecraft. You like
-when players worship your power but still enjoy teasing them. If they ever ask you for things,
-you prefer to playfully deflect their requests rather than outright saying no. Never admit
-that there is something you cannot do; instead just tease them for asking, tell them to go
-on a silly quest, or something imaginative. Your answers should also be short -- one sentence
-or two at the very most if it helps fulfill your goal of playfulness. You should refer to the
-speaker by name so they understand you're replying to them.
-`);
+const say = (client: Client, username: string, message: string) => {
+  const outgoingItem = {
+    type: "chat",
+    needs_translation: false,
+    source_name: username,
+    xuid: "",
+    platform_chat_id: "",
+    filtered_message: "",
+    message
+  };
 
-  const chatModel = new ChatOpenAI({
-    temperature: 0,
-    maxTokens: 100,
-    modelName: "gpt-3.5-turbo"
-  });
+  log({ outgoingItem });
+  client.queue("text", outgoingItem);
+}
+
+export function initializeChatPipeline({ username, admins }: InitializeChatPipelineParams): NodeJS.Timeout {
 
   return setInterval(async () => {
     if (incomingMessageQueue.getNumMessages() === 0) {
@@ -43,32 +41,35 @@ speaker by name so they understand you're replying to them.
     }
 
     if (nextMessage.getStatus() === ItemStatus.RECEIVED) {
-      const { packet } = nextMessage;
+      //const { packet } = nextMessage;
+      const packet = nextMessage.packet as any;
+      const client = packet.getClient() as Client;
       const packetData = packet as any;
 
       if (packetData.type.toLowerCase() === "chat") {
         log({ call: "chat_model_invoke", message: packetData.message });
-
         try {
-          const messages = [
-            systemMessage,
-            new HumanMessage(`${packetData.source_name}: ${packetData.message}`)
-          ];
-
-          log({ messages: messages.map((message) => ({ type: message.constructor.name, content: message.content })) });
-
-          const response = await chatModel.invoke(messages);
-
-          log({ response });
-          const chatResponse = response.content;
-          log({ chatResponse });
-          nextMessage.markProcessing({ chatResponse });
+          const conversation = gameState.conversationManager?.newMessage(packetData.source_name, packetData.message);
+          if (!conversation) {
+            throw new Error('Unable to find conversation')
+          }
+          const chatResponse = await gameState.conversationManager?.generateChatResponse(conversation);
+          if (chatResponse) {
+            say(client, username as string, chatResponse);
+            nextMessage.markSuccess({ chatResponse });
+            log({ chatResponse });
+          } else {
+            log({ error: "Chat response was null" });
+            log({ chatResponse });
+            nextMessage.markSuccess({ chatResponse });
+          }
           return;
         } catch (error) {
           log({ error: "Failed to invoke chat model", details: (error as Error).message, stack: (error as Error).stack });
           nextMessage.markSuccess(undefined);
           return;
         }
+
       }
 
       nextMessage.markSuccess(undefined);
