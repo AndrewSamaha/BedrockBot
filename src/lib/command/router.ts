@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CommandNodeDef, CommandRouter, CommandContext } from './command-tree';
+import { type CommandNodeDef, CommandRouter, type CommandContext } from './command-tree';
 import { isAdmin } from './utils';
 import config from './commands/config';
 
@@ -16,7 +16,7 @@ const rootDef: CommandNodeDef = {
         {
           name: "restart",
           description: "Restart the bot process.",
-          usage: "bot restart",
+          usage: "test",
           guards: [], // [isAdmin]
           handler: async (ctx) => ctx.reply("Restarting..."),
         }

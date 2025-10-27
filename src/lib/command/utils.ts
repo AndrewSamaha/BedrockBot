@@ -1,7 +1,7 @@
 // src/lib/command/utils.ts
 
 import { z } from "zod";
-import { CommandNodeDef, CommandRouter, CommandContext } from "./command-tree";
+import { type CommandNodeDef, CommandRouter, type CommandContext } from "./command-tree";
 
 // Simple auth guard examples
 export const isAdmin = (ctx: CommandContext) =>

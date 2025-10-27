@@ -21,6 +21,7 @@ import spawn from './handlers/spawn.js';
 import startGame from './handlers/start_game.js';
 import text from './handlers/text.js';
 import updateAttributes from './handlers/update_attributes.js';
+import whisper from './handlers/whisper';
 
 // Function to load all handlers statically
 function loadHandlers(): ClientHandler[] {
@@ -39,7 +40,8 @@ function loadHandlers(): ClientHandler[] {
     spawn,
     startGame,
     text,
-    updateAttributes
+    updateAttributes,
+    whisper
   ];
 
   console.log(`Successfully loaded ${handlers.length} handlers`);

@@ -41,7 +41,7 @@ export class CommandNode<TArgs = unknown> {
 
   constructor(def: CommandNodeDef<TArgs>) {
     this.name = def.name;
-    this.aliases = new Set([def.name, ...(def.aliases ?? [])].map(s => s.toLowerCase()));
+    this.aliases = new Set([def.name, ...(def.aliases ?? [])].map(s => s && s.toLowerCase()));
     this.description = def.description;
     this.usage = def.usage;
     this.guards = def.guards ?? [];
@@ -67,8 +67,65 @@ export class CommandRouter {
 
   constructor(rootDef: CommandNodeDef) {
     this.root = new CommandNode(rootDef);
+    this.addBuiltinCommands();
   }
 
+  // NEW: DFS to collect all runnable command paths (skip aliases dupes)
+  private listAllRunnableCommands(): { path: string; usage?: string; description?: string }[] {
+    const results: { path: string; usage?: string; description?: string }[] = [];
+
+    const visit = (node: CommandNode, trail: string[]) => {
+      // If this node has a handler, record it (ignore the artificial "root" in trail[0])
+      if (node.handler && trail.length > 0) {
+        const path = trail.join(" ");
+        results.push({ path, usage: node.usage, description: node.description });
+      }
+      // Recurse unique children by canonical name (avoid alias duplicates)
+      const uniqueKids = [...node.children.values()]
+        .filter((v,i,a)=>a.findIndex(x=>x.name===v.name)===i);
+      for (const child of uniqueKids) {
+        visit(child, [...trail, child.name]);
+      }
+    };
+
+    // Start at each top-level child (skip artificial root token)
+    const tops = [...this.root.children.values()]
+      .filter((v,i,a)=>a.findIndex(x=>x.name===v.name)===i);
+
+    for (const top of tops) visit(top, [top.name]);
+    // Sort nicely
+    results.sort((a,b)=>a.path.localeCompare(b.path));
+    return results;
+  }
+
+  // NEW: inject a root-level "commands" leaf that prints everything
+  private addBuiltinCommands() {
+    const name = "commands";
+    // don't override if user already defined one
+    if ([...this.root.children.values()].some(n => n.name === name)) return;
+
+    const node = new CommandNode({
+      name,
+      description: "List all available commands (including subcommands).",
+      usage: "commands",
+      handler: async (ctx) => {
+        const all = this.listAllRunnableCommands();
+        if (all.length === 0) {
+          await ctx.reply("(no commands registered)");
+          return;
+        }
+        const lines = all.map(c =>
+          c.usage
+            ? `- ${c.path} — ${c.usage}${c.description ? `\n    ${c.description}` : ""}`
+            : `- ${c.path}${c.description ? ` — ${c.description}` : ""}`
+        );
+        await ctx.reply(lines.join("\n"));
+      },
+    });
+
+    // register under root for name + aliases (only name here)
+    this.root.children.set(name, node);
+  }
   // Tokenize allowing quotes:  hello "some words" -> ["hello","some words"]
   tokenize(input: string): string[] {
     const out: string[] = [];
