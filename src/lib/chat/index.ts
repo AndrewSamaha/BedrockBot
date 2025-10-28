@@ -1,5 +1,7 @@
 import type { Client } from "bedrock-protocol";
 
+import { say } from './utils';
+
 import { gameState } from "@/lib/GameState";
 import { log } from "@/lib/log";
 import { incomingMessageQueue } from "@/lib/queues";
@@ -11,20 +13,6 @@ type InitializeChatPipelineParams = {
 };
 
 const POLL_INTERVAL_MS = 2_000;
-
-const say = (client: Client, username: string, message: string) => {
-  const outgoingItem = {
-    type: "chat",
-    needs_translation: false,
-    source_name: username,
-    xuid: "",
-    platform_chat_id: "",
-    filtered_message: "",
-    message
-  };
-
-  client.queue("text", outgoingItem);
-}
 
 export function initializeChatPipeline({ username, admins }: InitializeChatPipelineParams): NodeJS.Timeout {
 

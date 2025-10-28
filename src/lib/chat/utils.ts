@@ -1,0 +1,34 @@
+import type { Client } from "bedrock-protocol";
+
+import { log } from '@/lib/log';
+
+export const say = (client: Client, username: string, message: string) => {
+  const outgoingItem = {
+    type: "chat",
+    needs_translation: false,
+    source_name: username,
+    xuid: "",
+    platform_chat_id: "",
+    filtered_message: "",
+    message
+  };
+
+  client.queue("text", outgoingItem);
+}
+
+export const tell = (client: Client, sender: string, receiver: string, message: string) => {
+  const outgoingItem = {
+    type: "whisper",
+    needs_translation: false,
+    source_name: sender,
+    xuid: "",
+    platform_chat_id: receiver,
+    filtered_message: message,
+    message,
+    string: message
+  };
+  log({ outgoingItem })
+  client.queue("text", outgoingItem);
+}
+
+

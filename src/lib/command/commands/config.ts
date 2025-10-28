@@ -1,8 +1,15 @@
 import { z } from 'zod';
-import { type CommandNodeDef, CommandRouter } from '../command-tree';
+
+import { type CommandNodeDef } from '../command-tree';
 import { kvSchema, keySchema, updateSchema } from '../utils';
+
+import { botConfig } from '@/config/bot';
+
+const store = new Map(Object.entries(botConfig.movement));
+
 // src/lib/command/commands/config.ts
 const rootDef: CommandNodeDef = {
+  name: 'config',
   description: "View and modify bot configuration.",
   usage: "config <subcommand>",
   guards: [],                 // gate the whole namespace
