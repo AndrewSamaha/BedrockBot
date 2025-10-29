@@ -1,11 +1,14 @@
 
 // command-tree.ts
+import { type Client } from 'bedrock-protocol';
 import { z } from "zod";
 
 // Context you pass in (who sent it, permissions, reply fn, etc.)
 export type CommandContext = {
   userId: string;
   roles: string[];
+  client: Client;
+  packet: any;
   reply: (msg: string) => Promise<void> | void;
 };
 
