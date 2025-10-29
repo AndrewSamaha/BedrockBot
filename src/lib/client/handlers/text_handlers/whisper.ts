@@ -1,7 +1,7 @@
 import { type Client } from 'bedrock-protocol';
 
 import { env } from '@/config/env';
-import { say } from '@/lib/chat/utils';
+import { tell } from '@/lib/chat/utils';
 import { router } from '@/lib/command/router';
 import { log } from '@/lib/log';
 
@@ -27,8 +27,8 @@ const whisper = {
     });
 
     log({ whisper: resultStr });
-    say(client, env.BEDROCK_USERNAME, resultStr);
-
+//    say(client, env.BEDROCK_USERNAME, resultStr);
+    tell(client, env.BEDROCK_USERNAME, packet.source_name, resultStr);
   }
 };
 

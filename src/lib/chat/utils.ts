@@ -31,14 +31,14 @@ export const tell = (client: Client, sender: string, receiver: string, message: 
   log({ outgoingItem })
   //client.queue("text", outgoingItem);
   client.queue('command_request', {
-        command: `/tell ${receiver} test`,
-        origin: {
-            type: 0,
-            uuid: uuidv4(),
-            request_id: "only need for T5"
-        },
-        internal: false,
-        version: 88 // not sure how to find this out
+    command: `/tell ${receiver} ${message}`,
+    origin: {
+        type: 0,
+        uuid: uuidv4(),
+        request_id: "only need for T5"
+    },
+    internal: false,
+    version: 88 // not sure how to find this out
   });
 }
 
