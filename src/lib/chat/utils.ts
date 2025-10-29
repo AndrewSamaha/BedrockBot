@@ -1,4 +1,5 @@
 import type { Client } from "bedrock-protocol";
+import { v4 as uuidv4 } from 'uuid';
 
 import { log } from '@/lib/log';
 
@@ -28,7 +29,17 @@ export const tell = (client: Client, sender: string, receiver: string, message: 
     string: message
   };
   log({ outgoingItem })
-  client.queue("text", outgoingItem);
+  //client.queue("text", outgoingItem);
+  client.queue('command_request', {
+        command: `/tell ${receiver} test`,
+        origin: {
+            type: 0,
+            uuid: uuidv4(),
+            request_id: "only need for T5"
+        },
+        internal: false,
+        version: 88 // not sure how to find this out
+  });
 }
 
 
