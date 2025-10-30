@@ -1,27 +1,15 @@
-import { z } from 'zod';
-import { type CommandNodeDef, CommandRouter, type CommandContext } from './command-tree';
-import { isAdmin } from './utils';
+import { type CommandNodeDef, CommandRouter } from './command-tree';
 import config from './commands/config';
+import sleep from './commands/sleep';
+import teleport from './commands/teleport';
 
 // src/lib/command/commands/config.ts
 const rootDef: CommandNodeDef = {
   name: "root",
   children: [
     config,
-    // Another top-level command with its own sub-tree:
-    {
-      name: "test",
-      description: "Test command.",
-      children: [
-        {
-          name: "restart",
-          description: "Restart the bot process.",
-          usage: "test",
-          guards: [], // [isAdmin]
-          handler: async (ctx) => ctx.reply("Restarting..."),
-        }
-      ]
-    }
+    sleep,
+    teleport
   ]
 };
 

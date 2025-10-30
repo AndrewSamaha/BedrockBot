@@ -73,61 +73,68 @@ export class CommandRouter {
     this.addBuiltinCommands();
   }
 
-  // NEW: DFS to collect all runnable command paths (skip aliases dupes)
-  private listAllRunnableCommands(): { path: string; usage?: string; description?: string }[] {
-    const results: { path: string; usage?: string; description?: string }[] = [];
-
-    const visit = (node: CommandNode, trail: string[]) => {
-      // If this node has a handler, record it (ignore the artificial "root" in trail[0])
-      if (node.handler && trail.length > 0) {
-        const path = trail.join(" ");
-        results.push({ path, usage: node.usage, description: node.description });
-      }
-      // Recurse unique children by canonical name (avoid alias duplicates)
-      const uniqueKids = [...node.children.values()]
-        .filter((v,i,a)=>a.findIndex(x=>x.name===v.name)===i);
-      for (const child of uniqueKids) {
-        visit(child, [...trail, child.name]);
-      }
-    };
-
-    // Start at each top-level child (skip artificial root token)
-    const tops = [...this.root.children.values()]
-      .filter((v,i,a)=>a.findIndex(x=>x.name===v.name)===i);
-
-    for (const top of tops) visit(top, [top.name]);
-    // Sort nicely
-    results.sort((a,b)=>a.path.localeCompare(b.path));
-    return results;
+  private addBuiltinCommands() {
+    this.attachHelp(this.root, []);
   }
 
-  // NEW: inject a root-level "commands" leaf that prints everything
-  private addBuiltinCommands() {
-    const name = "commands";
-    // don't override if user already defined one
-    if ([...this.root.children.values()].some(n => n.name === name)) return;
+  private attachHelp(node: CommandNode, path: string[]): void {
+    const uniqueChildren = this.uniqueChildren(node);
 
-    const node = new CommandNode({
-      name,
-      description: "List all available commands (including subcommands).",
-      usage: "commands",
-      handler: async (ctx) => {
-        const all = this.listAllRunnableCommands();
-        if (all.length === 0) {
-          await ctx.reply("(no commands registered)");
-          return;
+    if (!node.handler && uniqueChildren.length > 0) {
+      const hasHelpChild = uniqueChildren.some(child => child.name === "help");
+      if (!hasHelpChild) {
+        const usagePath = [...path, "help"].join(" ").trim();
+        const targetNode = node;
+        const helpNode = new CommandNode({
+          name: "help",
+          description: path.length === 0
+            ? "List commands available at the root level."
+            : `List commands available under ${path.join(" ")}.`,
+          usage: usagePath || "help",
+          handler: async (ctx, args) => {
+            const argTokens = Array.isArray(args) ? args as string[] : [];
+            if (argTokens.length === 0) {
+              await ctx.reply(this.helpFor(targetNode));
+              return;
+            }
+
+            const resolved = this.resolveFrom(targetNode, argTokens);
+            if (!resolved) {
+              await ctx.reply(`Unknown command path "${argTokens.join(" ")}".`);
+              return;
+            }
+
+            await ctx.reply(this.helpFor(resolved));
+          },
+        });
+
+        for (const alias of helpNode.aliases) {
+          node.children.set(alias, helpNode);
         }
-        const lines = all.map(c =>
-          c.usage
-            ? `- ${c.path} — ${c.usage}${c.description ? `\n    ${c.description}` : ""}`
-            : `- ${c.path}${c.description ? ` — ${c.description}` : ""}`
-        );
-        await ctx.reply(lines.join("\n"));
-      },
-    });
+      }
+    }
 
-    // register under root for name + aliases (only name here)
-    this.root.children.set(name, node);
+    for (const child of uniqueChildren) {
+      if (child.name === "help") continue;
+      this.attachHelp(child, [...path, child.name]);
+    }
+  }
+
+  private resolveFrom(start: CommandNode, path: string[]): CommandNode | null {
+    let current = start;
+    for (const token of path) {
+      const next = current.findChild(token);
+      if (!next) return null;
+      current = next;
+    }
+    return current;
+  }
+
+  private uniqueChildren(node: CommandNode): CommandNode[] {
+    return [...node.children.values()]
+      .filter((child, index, array) =>
+        array.findIndex(candidate => candidate.name === child.name) === index
+      );
   }
   // Tokenize allowing quotes:  hello "some words" -> ["hello","some words"]
   tokenize(input: string): string[] {
@@ -213,8 +220,7 @@ export class CommandRouter {
 
   // Build a friendly “did you mean” for top-level commands
   suggest(token: string): string {
-    const tops = [...this.root.children.values()]
-      .filter((v,i,a)=>a.findIndex(x=>x.name===v.name)===i)
+    const tops = this.uniqueChildren(this.root)
       .map(n => n.name)
       .sort();
     return `Unknown command "${token}". Try one of: ${tops.join(", ")}`;
@@ -224,8 +230,7 @@ export class CommandRouter {
     const lines: string[] = [];
     lines.push(node.description ? `# ${node.name}\n${node.description}` : `# ${node.name}`);
     if (node.usage) lines.push(`Usage: ${node.usage}`);
-    const uniqueKids = [...node.children.values()]
-      .filter((v,i,a)=>a.findIndex(x=>x.name===v.name)===i);
+    const uniqueKids = this.uniqueChildren(node);
     if (uniqueKids.length) {
       lines.push("Subcommands:");
       for (const c of uniqueKids) {
