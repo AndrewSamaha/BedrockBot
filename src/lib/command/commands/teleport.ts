@@ -1,6 +1,6 @@
 import { type CommandNodeDef } from '../command-tree';
 
-import { teleport as teleportServerCmd } from '@/lib/chat/utils';
+import { teleport as teleportServerCmd } from '@/lib/serverCommands';
 import { log } from '@/lib/log';
 
 // src/lib/command/commands/teleport.ts

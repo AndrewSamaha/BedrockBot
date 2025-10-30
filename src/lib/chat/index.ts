@@ -1,6 +1,6 @@
 import type { Client } from "bedrock-protocol";
 
-import { say } from './utils';
+import { say } from '@/lib/serverCommands';
 
 import { gameState } from "@/lib/GameState";
 import { log } from "@/lib/log";

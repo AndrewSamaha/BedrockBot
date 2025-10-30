@@ -1,7 +1,7 @@
 import { type Client } from 'bedrock-protocol';
 
 import { env } from '@/config/env';
-import { tell } from '@/lib/chat/utils';
+import { tell } from '@/lib/serverCommands';
 import { router } from '@/lib/command/router';
 import { log } from '@/lib/log';
 

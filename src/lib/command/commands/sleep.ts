@@ -2,7 +2,7 @@
 import { type CommandNodeDef } from '../command-tree';
 
 import { env } from '@/config/env';
-import { teleport, sleep as sleepServerCmd } from '@/lib/chat/utils';
+import { teleport, sleep as sleepServerCmd } from '@/lib/serverCommands';
 import { gameState } from '@/lib/GameState';
 import { log } from '@/lib/log';
 
