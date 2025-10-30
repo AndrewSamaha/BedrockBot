@@ -228,15 +228,20 @@ export class CommandRouter {
 
   helpFor(node: CommandNode): string {
     const lines: string[] = [];
-    lines.push(node.description ? `# ${node.name}\n${node.description}` : `# ${node.name}`);
-    if (node.usage) lines.push(`Usage: ${node.usage}`);
+    const headerParts: string[] = [`# ${node.name}`];
+    if (node.description) headerParts.push(node.description);
+    if (node.usage) headerParts.push(`Usage: ${node.usage}`);
+    lines.push(headerParts.join(" — "));
     const uniqueKids = this.uniqueChildren(node);
     if (uniqueKids.length) {
       lines.push("Subcommands:");
       for (const c of uniqueKids) {
-        lines.push(`  - ${c.name}${c.description ? `: ${c.description}` : ""}`);
+        const parts: string[] = [c.name];
+        // if (c.usage) parts.push(c.usage);
+        // if (c.description) parts.push(c.description);
+        lines.push(`${parts.join(" ")}`);
       }
     }
-    return lines.join("\n");
+    return lines.join(" ");
   }
 }
