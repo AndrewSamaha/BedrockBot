@@ -14,4 +14,5 @@ export const env = {
   LOG_INCLUDE_PACKETS: process.env.LOG_INCLUDE_PACKETS?.split(',') || [],
   LOG_EXCLUDE_PACKETS: process.env.LOG_EXCLUDE_PACKETS?.split(',') || [],
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  BED_LOCATION: process.env.BED_LOCATION
 };
