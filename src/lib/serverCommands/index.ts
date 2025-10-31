@@ -46,7 +46,7 @@ export const sleep = (client: Client, args: unknown) => {
   // packet player action: https://prismarinejs.github.io/minecraft-data/?v=bedrock_1.21.111&d=protocol#packet_player_action
   const { runtimeEntityId, destination } = args as { runtimeEntityId: number, destination?: string };
   const [ x, y, z ] = destination ? destination.split(" ") : [ 0, 90, 0 ];
-  const START_SLEEP = 5;
+  const START_SLEEP = 'start_sleeping';//5;
   const STOP_SLEEP = 6;
   client.queue('player_action', {
     runtime_entity_id: runtimeEntityId as any,
