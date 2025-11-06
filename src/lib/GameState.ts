@@ -1,8 +1,8 @@
 import { ConversationManager } from './chat/conversation.js';
 import { log } from './log.js';
-import { botConfig } from '@/config/bot'
 import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement.js'
 
+import { botConfig } from '@/config/bot'
 import { env } from '@/config/env';
 
 const TIC_INTERVAL = 50;
@@ -189,7 +189,7 @@ class GameState {
     this.lastTic = Date.now();
     // Add your tic logic here
     if (this.playerPosition && this.spawned) {
-      this.randomMove();
+      //this.randomMove();
       return;
     }
   }

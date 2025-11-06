@@ -1,6 +1,8 @@
 import type { Client } from "bedrock-protocol";
 import { v4 as uuidv4 } from 'uuid';
 
+import { log } from '@/lib/log';
+
 export const say = (client: Client, username: string, message: string) => {
   const outgoingItem = {
     type: "chat",
@@ -46,13 +48,33 @@ export const sleep = (client: Client, args: unknown) => {
   // packet player action: https://prismarinejs.github.io/minecraft-data/?v=bedrock_1.21.111&d=protocol#packet_player_action
   const { runtimeEntityId, destination } = args as { runtimeEntityId: number, destination?: string };
   const [ x, y, z ] = destination ? destination.split(" ") : [ 0, 90, 0 ];
-  const START_SLEEP = 'start_sleeping';//5;
+  const START_SLEEP_STR = 'start_sleeping';//5;
+  const START_SLEEP_NUM = 5;
   const STOP_SLEEP = 6;
-  client.queue('player_action', {
-    runtime_entity_id: runtimeEntityId as any,
-    action: START_SLEEP,
-    position: { x, y, z } as any,
-    result_position: { x, y, z } as any,
+  const params = {
+    runtime_entity_id: Number(runtimeEntityId),
+    action: START_SLEEP_STR,
+    position: { x: 0, y: 0, z: 0 },
+    result_position: { x: 0, y: 0, z: 0 },
     face: 0,
+  };
+  log({ player_action: params })
+  client.queue('player_action', params);
+  log({
+    type_of_runtime_entity_id: (typeof params.runtime_entity_id),
+    is_bigint: (typeof params.runtime_entity_id === 'bigint'),
+    runtime_entity_id: params.runtime_entity_id
   });
+
+   /*
+  {"name":"player_action","params":
+    {
+      "runtime_entity_id":"16335",
+      "action":"start_sleeping",
+      "position":{"x":0,"y":0,"z":0},
+      "result_position":{"x":0,"y":0,"z":0},
+      "face":0
+    }
+  }}
+*/
 };
