@@ -27,7 +27,7 @@ const whisper = {
 
     log({ whisper: resultStr });
 //    say(client, env.BEDROCK_USERNAME, resultStr);
-    tell(client, env.BEDROCK_USERNAME, packet.source_name, resultStr);
+    //tell(client, env.BEDROCK_USERNAME, packet.source_name, resultStr);
   }
 };
 
