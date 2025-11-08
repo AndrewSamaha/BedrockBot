@@ -3,6 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { log } from '@/lib/log';
 
+// barrel import move
+export { move } from './move';
+
 export const say = (client: Client, username: string, message: string) => {
   const outgoingItem = {
     type: "chat",

@@ -1,15 +1,18 @@
+import { type Client } from 'bedrock-protocol';
+
 import { ConversationManager } from './chat/conversation.js';
 import { log } from './log.js';
-import { buildAuthInputPacket, createRandomMoveVectorGenerator, type Vec3 } from './playerInput/movement.js'
+import { buildAuthInputPacket, createRandomMoveVectorGenerator } from './playerInput/movement.js'
+import { type Vec3 } from './types.js';
 
 import { botConfig } from '@/config/bot'
 import { env } from '@/config/env';
 
 const TIC_INTERVAL = 50;
 
-class GameState {
+export class GameState {
   private static instance: GameState | null = null;
-  playerPosition: unknown;
+  playerPosition: Vec3 | undefined;
   pitch: number | undefined;
   yaw: number | undefined;
   headYaw: number | undefined;
@@ -18,7 +21,7 @@ class GameState {
   runtimeEntityId: number | undefined;
   permissionLevel: string | undefined;
   lastTic: number;
-  client: unknown;
+  client: Client | undefined;
   spawned: boolean;
   seed: string | undefined;
   currentTick: bigint | undefined;
@@ -46,7 +49,7 @@ class GameState {
     return GameState.instance;
   }
 
-  startGame(client: unknown, packet: any) {
+  startGame(client: Client, packet: any) {
     this.client = client;
     if (this.spawned) {
       return;
