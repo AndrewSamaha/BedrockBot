@@ -37,8 +37,31 @@ const rootDef: CommandNodeDef = {
         move(ctx.client, gameState, moveVector, lookVector);
       },
     },
+    {
+      name: "forward",
+      description: "instruct the bot to look straight ahead",
+      usage: 'look forward',
+      // Optional single arg: if provided, show that key; else show all
+      argsSchema: z.union([
+        z.tuple([]),                 // no args
+      ]),
+      handler: async (ctx) => {
+        const moveVector: Vec3 = {
+          x: 0,
+          y: 0,
+          z: 0
+        };
+        const lookVector: LookVector = {
+          pitch: botConfig.look.forwardPitch,
+          yaw: 0,
+          head_yaw: 0
+        };
+        log({ commandHandler: 'look', lookVector, moveVector })
+        move(ctx.client, gameState, moveVector, lookVector);
+      },
+    },
   ],
-  defaultChild: "down",
+  defaultChild: "forward",
 };
 
 export default rootDef;

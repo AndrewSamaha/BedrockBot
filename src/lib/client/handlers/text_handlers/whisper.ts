@@ -3,7 +3,6 @@ import { type Client } from 'bedrock-protocol';
 import { env } from '@/config/env';
 import { router } from '@/lib/command/router';
 import { log } from '@/lib/log';
-import { tell } from '@/lib/serverCommands';
 
 const TEXT_PACKET_TYPE = 'whisper';
 // whisper / tell
@@ -16,18 +15,15 @@ const whisper = {
 
     // Ignore packets we send
     if (packet.source_name === env.BEDROCK_USERNAME) return;
-    let resultStr = ''
-    const result = await router.execute(packet.message, {
+    await router.execute(packet.message, {
       packet,
       client,
       reply: (message: string) => {
-        resultStr = message;
+        log({ reply_to_whisper_was_called: true, message });
       }
     });
 
-    log({ whisper: resultStr });
-//    say(client, env.BEDROCK_USERNAME, resultStr);
-    //tell(client, env.BEDROCK_USERNAME, packet.source_name, resultStr);
+    log({ text_handler: 'whisper', packet });
   }
 };
 
