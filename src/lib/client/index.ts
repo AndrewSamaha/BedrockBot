@@ -39,7 +39,7 @@ function loadHandlers(): ClientHandler[] {
     spawn,
     startGame,
     text,
-    updateAttributes
+    updateAttributes,
   ];
 
   console.log(`Successfully loaded ${handlers.length} handlers`);
