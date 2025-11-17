@@ -11,6 +11,20 @@ import { env } from '@/config/env';
 import { createConnection } from './connection.js';
 
 const TIC_INTERVAL = 50;
+const MINECRAFT_DAY_LENGTH_IN_TICS = 24_000;
+
+export type DAY_PHASE = 'day' | 'night' | 'sunset' | 'sunrise' | 'noon' | 'midnight';
+
+const getDayPhase: DAY_PHASE = (gameTime: number) => {
+  const timeOfDay = (
+    (gameTime % MINECRAFT_DAY_LENGTH_IN_TICS) +
+    MINECRAFT_DAY_LENGTH_IN_TICS
+  ) % MINECRAFT_DAY_LENGTH_IN_TICS;
+  if (timeOfDay < 12000) return 'day';
+  if (timeOfDay < 13000) return 'sunset';
+  if (timeOfDay < 23000) return 'night';
+  return 'sunrise';
+}
 
 export class GameState {
   private static instance: GameState | null = null;
@@ -35,6 +49,9 @@ export class GameState {
   sleeping: boolean | undefined;
   reconnectTimeout: NodeJS.Timeout | null = null;
   isReconnecting: boolean;
+  gameTime: number | undefined;
+  lastGameTimeRealTime: number | undefined;
+  dayPhase: DAY_PHASE | undefined;
 
   private ticInterval: NodeJS.Timeout | null = null;
 
@@ -54,6 +71,19 @@ export class GameState {
     }
 
     return GameState.instance;
+  }
+
+  setTime(gameTime: number) {
+    console.log(`gameState.setTime(${gameTime}) `)
+    if (this.gameTime !== undefined) {
+      const gameTimeDiff = gameTime - this.gameTime;
+      const realTimeDiff = Date.now() - this.lastGameTimeRealTime;
+      console.log(`gameTime: ${this.gameTime} | diffSinceLast: ${gameTimeDiff} | realTimeDiff: ${realTimeDiff} ms`)
+    }
+    this.gameTime = gameTime;
+    this.lastGameTimeRealTime = Date.now();
+    this.dayPhase = getDayPhase(this.gameTime);
+    console.log(`dayPhase: ${this.dayPhase}`)
   }
 
   startGame(client: Client, packet: any) {
@@ -280,14 +310,14 @@ export class GameState {
       console.log('Disconnecting from server...');
       this.stopTic();
       this.spawned = false;
-      
+
       // Close the client connection
       try {
         this.client.close();
       } catch (err) {
         console.error('Error closing client:', err);
       }
-      
+
       this.client = undefined;
       console.log('Disconnected from server');
     }
@@ -323,7 +353,7 @@ export class GameState {
     // Reconnect
     console.log('Attempting to reconnect...');
     const newClient = await createConnection();
-    
+
     if (newClient) {
       console.log('Reconnection successful');
       // The client will be set in gameState via the start_game handler
