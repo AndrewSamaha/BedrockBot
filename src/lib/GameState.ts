@@ -8,6 +8,7 @@ import { type Vec3 } from './types.js';
 
 import { botConfig } from '@/config/bot'
 import { env } from '@/config/env';
+import { createConnection } from './connection.js';
 
 const TIC_INTERVAL = 50;
 
@@ -32,6 +33,8 @@ export class GameState {
   attributes: unknown | undefined;
   conversationManager: undefined | ConversationManager;
   sleeping: boolean | undefined;
+  reconnectTimeout: NodeJS.Timeout | null = null;
+  isReconnecting: boolean;
 
   private ticInterval: NodeJS.Timeout | null = null;
 
@@ -42,6 +45,7 @@ export class GameState {
     this.nextRandomMove = createRandomMoveVectorGenerator(botConfig.movement);
     this.conversationManager = new ConversationManager(env.BEDROCK_USERNAME);
     this.sleeping = false;
+    this.isReconnecting = false;
   }
 
   static getInstance(): GameState {
@@ -260,6 +264,75 @@ export class GameState {
     this.currentTick = packet?.tick;
     //this.position = position;
     //console.log({ currentTick: this.currentTick })
+  }
+
+  /**
+   * Disconnects from the server
+   */
+  disconnect(): void {
+    // Cancel any pending reconnect timeout
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.client) {
+      console.log('Disconnecting from server...');
+      this.stopTic();
+      this.spawned = false;
+      
+      // Close the client connection
+      try {
+        this.client.close();
+      } catch (err) {
+        console.error('Error closing client:', err);
+      }
+      
+      this.client = undefined;
+      console.log('Disconnected from server');
+    }
+
+    // Reset reconnecting flag if we're manually disconnecting
+    this.isReconnecting = false;
+  }
+
+  /**
+   * Disconnects, waits for the specified duration, then reconnects
+   * @param pauseDurationMs - Duration to wait before reconnecting in milliseconds (default: 30000)
+   */
+  async reconnect(pauseDurationMs: number = 30000): Promise<void> {
+    if (this.isReconnecting) {
+      console.log('Reconnection already in progress, skipping...');
+      return;
+    }
+
+    this.isReconnecting = true;
+    console.log(`Initiating reconnect: disconnecting, waiting ${pauseDurationMs}ms, then reconnecting...`);
+
+    // Disconnect first
+    this.disconnect();
+
+    // Wait for the specified duration
+    await new Promise<void>((resolve) => {
+      this.reconnectTimeout = setTimeout(() => {
+        this.reconnectTimeout = null;
+        resolve();
+      }, pauseDurationMs);
+    });
+
+    // Reconnect
+    console.log('Attempting to reconnect...');
+    const newClient = await createConnection();
+    
+    if (newClient) {
+      console.log('Reconnection successful');
+      // The client will be set in gameState via the start_game handler
+      // when the server sends the start_game packet
+    } else {
+      console.error('Reconnection failed');
+    }
+
+    this.isReconnecting = false;
   }
 }
 
