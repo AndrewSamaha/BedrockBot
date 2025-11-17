@@ -216,7 +216,7 @@ export function buildAuthInputPacket(params: {
     : currentRot.pitch
 
   // Head yaw can be different from body yaw (for looking around while moving)
-  const headYawDeg = (horizLen > 1e-6) 
+  const headYawDeg = (horizLen > 1e-6)
     ? normalizeAngleDeg(yawDeg + (Math.random() - 0.5) * 20) // Add some random head movement
     : yawDeg
   const newRot: Rotation = { pitch: pitchDeg, yaw: yawDeg, headYaw: headYawDeg }
@@ -231,7 +231,6 @@ export function buildAuthInputPacket(params: {
     sprint,
     sneak
   })
-
   // 5) Camera orientation (based on observed packets)
   const cameraOrientation: Vector3D = {
     x: Math.sin(yawDeg * Math.PI / 180) * Math.cos(pitchDeg * Math.PI / 180),

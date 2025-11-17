@@ -2,7 +2,8 @@ import { type Client } from 'bedrock-protocol';
 
 import { ConversationManager } from './chat/conversation.js';
 import { log } from './log.js';
-import { buildAuthInputPacket, createRandomMoveVectorGenerator } from './playerInput/movement.js'
+import { buildAuthInputPacket, createRandomMoveVectorGenerator } from './playerInput/movement.js';
+import type { PlayerInputFlags } from './playerInput/types';
 import { type Vec3 } from './types.js';
 
 import { botConfig } from '@/config/bot'
@@ -30,6 +31,7 @@ export class GameState {
   gameRules: unknown | undefined;
   attributes: unknown | undefined;
   conversationManager: undefined | ConversationManager;
+  sleeping: boolean | undefined;
 
   private ticInterval: NodeJS.Timeout | null = null;
 
@@ -39,6 +41,7 @@ export class GameState {
     this.headYaw = 0;
     this.nextRandomMove = createRandomMoveVectorGenerator(botConfig.movement);
     this.conversationManager = new ConversationManager(env.BEDROCK_USERNAME);
+    this.sleeping = false;
   }
 
   static getInstance(): GameState {
@@ -152,6 +155,46 @@ export class GameState {
     this.client.queue('player_auth_input', packet.params);
   }
 
+  sendPlayerAuthInputPacket() {
+    // Check if we have a valid position before trying to move
+    if (!this.playerPosition || typeof this.playerPosition !== 'object' ||
+        typeof this.playerPosition.x !== 'number' ||
+        typeof this.playerPosition.y !== 'number' ||
+        typeof this.playerPosition.z !== 'number') {
+      console.log('No valid position available for movement');
+      return;
+    }
+
+    const moveVector = {
+      x: 0,
+      y: 0,
+      z: 0
+    };
+
+    const { newState, packet } = buildAuthInputPacket({
+      currentPos: this.playerPosition,
+      currentRot: {
+        yaw: this.yaw || 0,
+        pitch: this.pitch || 0,
+        head_yaw: this.headYaw || 0,
+      },
+      moveVector,
+      tick: this.currentTick ? this.currentTick + 1n : 0n,
+      sprint: false
+    });
+
+    // Update state
+    this.playerPosition = newState.position;
+    this.pitch = newState.rotation.pitch;
+    this.yaw = newState.rotation.yaw;
+    this.headYaw = newState.rotation.headYaw || 0;
+    packet.params.input_data.vertical_collision = this.sleeping ? false : packet.params.input_data.vertical_collision;
+
+    log({ player_auth_input: packet });
+    this.client.queue('player_auth_input', packet.params);
+  }
+
+
   setPositionFromServer({ position, pitch, yaw, head_yaw }: any) {
     this.playerPosition = position;
     this.pitch = pitch;
@@ -190,10 +233,12 @@ export class GameState {
       console.log(`${this.currentTick} - ${new Date().toISOString()} - ${x}, ${y}, ${z} - ${yaw} ${pitch} ${headYaw}`);
     }
     this.lastTic = Date.now();
-    // Add your tic logic here
+    // Add additional tic logic here
     if (this.playerPosition && this.spawned) {
-      //this.randomMove();
+      this.sendPlayerAuthInputPacket();
       return;
+    } else {
+      console.log('waiting to spawn')
     }
   }
 
