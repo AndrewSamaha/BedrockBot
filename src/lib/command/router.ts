@@ -1,6 +1,7 @@
 import { type CommandNodeDef, CommandRouter } from './command-tree';
 import config from './commands/config';
 import look from './commands/look';
+import reconnect from './commands/reconnect';
 import sleep from './commands/sleep';
 import teleport from './commands/teleport';
 
@@ -12,6 +13,7 @@ const rootDef: CommandNodeDef = {
     sleep,
     teleport,
     look,
+    reconnect,
   ]
 };
 

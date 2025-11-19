@@ -21,6 +21,7 @@ import spawn from './handlers/spawn.js';
 import startGame from './handlers/start_game.js';
 import text from './handlers/text.js';
 import updateAttributes from './handlers/update_attributes.js';
+import setTime from './handlers/set_time';
 
 // Function to load all handlers statically
 function loadHandlers(): ClientHandler[] {
@@ -40,6 +41,7 @@ function loadHandlers(): ClientHandler[] {
     startGame,
     text,
     updateAttributes,
+    setTime
   ];
 
   console.log(`Successfully loaded ${handlers.length} handlers`);
