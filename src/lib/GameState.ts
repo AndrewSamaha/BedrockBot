@@ -6,7 +6,7 @@ import { buildAuthInputPacket, createRandomMoveVectorGenerator } from './playerI
 import type { PlayerInputFlags } from './playerInput/types';
 import { type Vec3 } from './types.js';
 
-import { botConfig } from '@/config/bot'
+import { botConfig, type BotConfig } from '@/config/bot'
 import { env } from '@/config/env';
 import { createConnection } from './connection.js';
 
@@ -28,6 +28,7 @@ const getDayPhase: DAY_PHASE = (gameTime: number) => {
 
 export class GameState {
   private static instance: GameState | null = null;
+  botConfig: BotConfig;
   playerPosition: Vec3 | undefined;
   pitch: number | undefined;
   yaw: number | undefined;
@@ -52,6 +53,9 @@ export class GameState {
   gameTime: number | undefined;
   lastGameTimeRealTime: number | undefined;
   dayPhase: DAY_PHASE | undefined;
+  overworldPlayerCount: number | undefined;
+  sleepingPlayerCount: number | undefined;
+  ableToSleep: number | undefined;
 
   private ticInterval: NodeJS.Timeout | null = null;
 
@@ -63,6 +67,7 @@ export class GameState {
     this.conversationManager = new ConversationManager(env.BEDROCK_USERNAME);
     this.sleeping = false;
     this.isReconnecting = false;
+    this.botConfig = botConfig;
   }
 
   static getInstance(): GameState {
@@ -84,6 +89,19 @@ export class GameState {
     this.lastGameTimeRealTime = Date.now();
     this.dayPhase = getDayPhase(this.gameTime);
     console.log(`dayPhase: ${this.dayPhase}`)
+  }
+
+  checkAutoReconnect() {
+    if (!this.botConfig.night.autoDisconnectAtNight) return;
+    if (this.sleepingPlayerCount <= 0) return;
+
+    if (this.overworldPlayercount - this.sleepingPlayerCount > 1) return;
+
+    const durationMs = this.botConfig.night.autoDisconnectAtNightDurationMs;
+    this.reconnect(durationMs).catch((err) => {
+      console.error('Reconnect error:', err);
+      log({ reconnect_error: err });
+    });
   }
 
   startGame(client: Client, packet: any) {
