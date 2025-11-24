@@ -1,14 +1,13 @@
 import { type Client } from 'bedrock-protocol';
 
 import { ConversationManager } from './chat/conversation.js';
+import { createConnection } from './connection.js';
 import { log } from './log.js';
 import { buildAuthInputPacket, createRandomMoveVectorGenerator } from './playerInput/movement.js';
-import type { PlayerInputFlags } from './playerInput/types';
 import { type Vec3 } from './types.js';
 
 import { botConfig, type BotConfig } from '@/config/bot'
 import { env } from '@/config/env';
-import { createConnection } from './connection.js';
 
 const TIC_INTERVAL = 50;
 const MINECRAFT_DAY_LENGTH_IN_TICS = 24_000;
@@ -248,10 +247,14 @@ export class GameState {
 
 
   setPositionFromServer({ position, pitch, yaw, head_yaw }: any) {
-    this.playerPosition = position;
-    this.pitch = pitch;
-    this.yaw = yaw;
-    this.headYaw = head_yaw;
+    if (position) this.playerPosition = {
+      x: position.x ?? this.playerPosition.x,
+      y: position.y ?? this.playerPosition.y,
+      z: position.z ?? this.playerPosition.z
+    };
+    if (pitch) this.pitch = pitch;
+    if (yaw) this.yaw = yaw;
+    if (head_yaw) this.headYaw = head_yaw;
   }
 
   move(newPosition: any, newRotation: any) {
