@@ -7,7 +7,7 @@ import { log } from '@/lib/log';
 const movePlayer = {
   name: 'move_entity_delta' as const,
   fn: async (packet: MovePlayer) => {
-    if (packet?.runtime_entity_id == gameState.runtime_entity_id) {
+    if (packet?.runtime_entity_id == gameState.runtimeEntityId) {
       log({ move_entity_delta: packet })
       gameState.setPositionFromServer({
         position: {

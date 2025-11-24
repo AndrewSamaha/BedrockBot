@@ -1,26 +1,22 @@
+
 import { type MovePlayer } from '../types/move_player';
 
 import { gameState } from '@/lib/GameState';
 import { log } from '@/lib/log';
 
 
-const movePlayer = {
-  name: 'move_player' as const,
+const handler = {
+  name: 'correct_player_move_position' as const,
   fn: async (packet: MovePlayer) => {
-    // fires when other entities send their position (every tick)
-    // so we use it to setTick
     gameState.setTick(packet);
     if (packet?.runtime_id == gameState.runtimeEntityId) {
-      console.log(`I was moved via mode: ${packet.mode}`)
-      log({ move_player: packet })
+      console.log(`I was moved via correct_player_move_position`)
+      log({ correct_player_move_position: packet })
       gameState.setPositionFromServer({
         position: packet.position,
-        yaw: packet.yaw,
-        pitch: packet.pitch,
-        head_yaw: packet.head_yaw
       })
     }
   }
 };
 
-export default movePlayer;
+export default handler;
