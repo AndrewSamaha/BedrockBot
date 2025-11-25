@@ -46,6 +46,22 @@ export const teleport = (client: Client, destination: string) => {
   });
 };
 
+export const fill = (client: Client, startPos: Vec3, endPos: Vec3, blockType: string) => {
+  const command = `/fill ${startPos.x} ${startPos.y} ${startPos.z} ${endPos.x} ${endPos.y} ${endPos.z} ${blockType}`;
+  console.log(`queuing command_request: ${command}`)
+  client.queue('command_request', {
+    command,
+    origin: {
+        type: 0,
+        uuid: uuidv4(),
+        request_id: "only need for T5"
+    },
+    internal: false,
+    version: 88 // not sure how to find this out
+  });
+};
+
+
 export const sleep = (client: Client, args: unknown) => {
   // action enum: https://prismarinejs.github.io/minecraft-data/?v=bedrock_1.21.111&d=protocol#Action
   // packet player action: https://prismarinejs.github.io/minecraft-data/?v=bedrock_1.21.111&d=protocol#packet_player_action
