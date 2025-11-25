@@ -15,7 +15,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "serve:vis": "node scripts/serve-visualization.js"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@eslint/js": "^9.37.0",
     "@types/node": "^24.7.0",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
     "@vitest/coverage-v8": "^3.2.4",
@@ -52,6 +54,7 @@
     "prismarine-chunk": "^1.39.0",
     "prismarine-registry": "^1.11.0",
     "uuid": "^13.0.0",
+    "ws": "^8.18.3",
     "zod": "^4.1.12"
   }
 }

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BedrockBot GameState Visualization</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #status {
+      padding: 1rem;
+      background: #2a2a2a;
+      border-bottom: 2px solid #444;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #status.connected {
+      border-bottom-color: #4caf50;
+    }
+
+    #status.disconnected {
+      border-bottom-color: #f44336;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .status-indicator.connected {
+      background: #4caf50;
+      box-shadow: 0 0 8px #4caf50;
+    }
+
+    .status-indicator.disconnected {
+      background: #f44336;
+    }
+
+    #container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 300px;
+      background: #252525;
+      padding: 1rem;
+      overflow-y: auto;
+      border-right: 1px solid #444;
+    }
+
+    #canvas-container {
+      flex: 1;
+      position: relative;
+      background: #0a0a0a;
+    }
+
+    #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .info-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .info-section h3 {
+      color: #4caf50;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #333;
+      font-size: 0.85rem;
+    }
+
+    .info-label {
+      color: #aaa;
+    }
+
+    .info-value {
+      color: #e0e0e0;
+      font-weight: 500;
+      font-family: 'Courier New', monospace;
+    }
+
+    .info-value.undefined {
+      color: #666;
+      font-style: italic;
+    }
+
+    #stats {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-family: 'Courier New', monospace;
+    }
+
+    .stat-item {
+      margin: 0.2rem 0;
+    }
+
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 1rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      min-width: 200px;
+    }
+
+    #controls h4 {
+      color: #4caf50;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .control-item {
+      margin: 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .control-item label {
+      flex: 1;
+      color: #aaa;
+    }
+
+    .control-item input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    .control-item button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .control-item button:hover {
+      background: #45a049;
+    }
+
+    .help-text {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #333;
+      font-size: 0.75rem;
+      color: #888;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="status" class="disconnected">
+    <div>
+      <span class="status-indicator disconnected"></span>
+      <span id="status-text">Disconnected</span>
+    </div>
+    <div id="client-count">Clients: 0</div>
+  </div>
+
+  <div id="container">
+    <div id="sidebar">
+      <div class="info-section">
+        <h3>Position</h3>
+        <div class="info-item">
+          <span class="info-label">X:</span>
+          <span class="info-value" id="pos-x">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Y:</span>
+          <span class="info-value" id="pos-y">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Z:</span>
+          <span class="info-value" id="pos-z">-</span>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3>Rotation</h3>
+        <div class="info-item">
+          <span class="info-label">Yaw:</span>
+          <span class="info-value" id="yaw">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Pitch:</span>
+          <span class="info-value" id="pitch">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Head Yaw:</span>
+          <span class="info-value" id="head-yaw">-</span>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3>Game State</h3>
+        <div class="info-item">
+          <span class="info-label">Spawned:</span>
+          <span class="info-value" id="spawned">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Game Time:</span>
+          <span class="info-value" id="game-time">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Day Phase:</span>
+          <span class="info-value" id="day-phase">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Current Tick:</span>
+          <span class="info-value" id="current-tick">-</span>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3>Players</h3>
+        <div class="info-item">
+          <span class="info-label">Overworld:</span>
+          <span class="info-value" id="overworld-count">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Sleeping:</span>
+          <span class="info-value" id="sleeping-count">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Able to Sleep:</span>
+          <span class="info-value" id="able-to-sleep">-</span>
+        </div>
+      </div>
+
+      <div class="info-section">
+        <h3>Entity</h3>
+        <div class="info-item">
+          <span class="info-label">Entity ID:</span>
+          <span class="info-value" id="entity-id">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Runtime Entity ID:</span>
+          <span class="info-value" id="runtime-entity-id">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="canvas-container">
+      <canvas id="canvas"></canvas>
+      <div id="controls">
+        <h4>Camera Controls</h4>
+        <div class="control-item">
+          <label>
+            <input type="checkbox" id="follow-player"> Follow Player
+          </label>
+        </div>
+        <div class="control-item">
+          <button id="reset-camera">Reset Camera</button>
+        </div>
+        <div class="help-text">
+          <strong>Controls:</strong><br>
+          • Left Click + Drag: Rotate<br>
+          • Right Click + Drag: Pan<br>
+          • Scroll: Zoom<br>
+          • Middle Click + Drag: Pan
+        </div>
+      </div>
+      <div id="stats">
+        <div class="stat-item">FPS: <span id="fps">0</span></div>
+        <div class="stat-item">Updates: <span id="update-count">0</span></div>
+        <div class="stat-item">Last Update: <span id="last-update">-</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Three.js from CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // WebSocket connection
+    // Use localhost explicitly if opened via file:// protocol
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.hostname || 'localhost';
+    const wsPort = 8080; // Match WEBSOCKET_PORT default
+    const wsUrl = window.location.protocol === 'file:' 
+      ? `ws://localhost:${wsPort}`
+      : `${wsProtocol}//${wsHost}:${wsPort}`;
+    
+    console.log('Connecting to WebSocket:', wsUrl);
+    const ws = new WebSocket(wsUrl);
+
+    let updateCount = 0;
+    let lastUpdateTime = Date.now();
+    let frameCount = 0;
+    let lastFpsTime = Date.now();
+
+    // Update UI elements
+    function updateUI(data) {
+      updateCount++;
+      lastUpdateTime = Date.now();
+
+      // Position
+      if (data.playerPosition) {
+        document.getElementById('pos-x').textContent = data.playerPosition.x.toFixed(2);
+        document.getElementById('pos-y').textContent = data.playerPosition.y.toFixed(2);
+        document.getElementById('pos-z').textContent = data.playerPosition.z.toFixed(2);
+      } else {
+        document.getElementById('pos-x').textContent = '-';
+        document.getElementById('pos-y').textContent = '-';
+        document.getElementById('pos-z').textContent = '-';
+      }
+
+      // Rotation
+      document.getElementById('yaw').textContent = data.yaw?.toFixed(2) ?? '-';
+      document.getElementById('pitch').textContent = data.pitch?.toFixed(2) ?? '-';
+      document.getElementById('head-yaw').textContent = data.headYaw?.toFixed(2) ?? '-';
+
+      // Game State
+      document.getElementById('spawned').textContent = data.spawned ? 'Yes' : 'No';
+      document.getElementById('game-time').textContent = data.gameTime?.toString() ?? '-';
+      document.getElementById('day-phase').textContent = data.dayPhase ?? '-';
+      document.getElementById('current-tick').textContent = data.currentTick?.toString() ?? '-';
+
+      // Players
+      document.getElementById('overworld-count').textContent = data.overworldPlayerCount?.toString() ?? '-';
+      document.getElementById('sleeping-count').textContent = data.sleepingPlayerCount?.toString() ?? '-';
+      document.getElementById('able-to-sleep').textContent = data.ableToSleep?.toString() ?? '-';
+
+      // Entity
+      document.getElementById('entity-id').textContent = data.entityId?.toString() ?? '-';
+      document.getElementById('runtime-entity-id').textContent = data.runtimeEntityId?.toString() ?? '-';
+
+      // Update timestamp
+      const timeSinceUpdate = Date.now() - data.timestamp;
+      document.getElementById('last-update').textContent = `${timeSinceUpdate}ms ago`;
+      document.getElementById('update-count').textContent = updateCount.toString();
+    }
+
+    // WebSocket event handlers
+    ws.onopen = () => {
+      console.log('✅ Connected to WebSocket server');
+      document.getElementById('status').classList.remove('disconnected');
+      document.getElementById('status').classList.add('connected');
+      document.getElementById('status-text').textContent = 'Connected';
+      document.querySelector('.status-indicator').classList.remove('disconnected');
+      document.querySelector('.status-indicator').classList.add('connected');
+    };
+
+    ws.onclose = (event) => {
+      console.log('❌ Disconnected from WebSocket server', event.code, event.reason);
+      document.getElementById('status').classList.remove('connected');
+      document.getElementById('status').classList.add('disconnected');
+      document.getElementById('status-text').textContent = `Disconnected (${event.code})`;
+      document.querySelector('.status-indicator').classList.remove('connected');
+      document.querySelector('.status-indicator').classList.add('disconnected');
+      
+      // Show helpful error message
+      if (event.code === 1006) {
+        console.error('Connection closed abnormally. Is the bot running?');
+        document.getElementById('status-text').textContent = 'Disconnected - Is the bot running?';
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('❌ WebSocket error:', error);
+      console.error('Make sure:');
+      console.error('1. The bot is running (pnpm dev)');
+      console.error('2. WebSocket server started on port', wsPort);
+      console.error('3. No firewall blocking the connection');
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        updateUI(data);
+        render3D(data);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
+
+    // Three.js setup
+    const canvas = document.getElementById('canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a0a);
+    scene.fog = new THREE.Fog(0x0a0a0a, 50, 200);
+
+    // Camera setup
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      canvas.clientWidth / canvas.clientHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(0, 50, 50);
+    camera.lookAt(0, 0, 0);
+
+    // Renderer setup
+    const renderer = new THREE.WebGLRenderer({ 
+      canvas: canvas,
+      antialias: true 
+    });
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Orbit controls for pan/zoom/rotate
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 5;
+    controls.maxDistance = 500;
+    controls.maxPolarAngle = Math.PI; // Allow full rotation
+    controls.enablePan = true;
+    controls.target.set(0, 0, 0);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(50, 100, 50);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 500;
+    directionalLight.shadow.camera.left = -100;
+    directionalLight.shadow.camera.right = 100;
+    directionalLight.shadow.camera.top = 100;
+    directionalLight.shadow.camera.bottom = -100;
+    scene.add(directionalLight);
+
+    // Grid helper
+    const gridHelper = new THREE.GridHelper(200, 200, 0x333333, 0x222222);
+    scene.add(gridHelper);
+
+    // Axes helper
+    const axesHelper = new THREE.AxesHelper(20);
+    scene.add(axesHelper);
+
+    // Player representation
+    let playerMesh = null;
+    let playerDirection = null;
+    let playerLabel = null;
+    let followPlayer = false;
+
+    function createPlayerMesh() {
+      // Player body (green box)
+      const geometry = new THREE.BoxGeometry(0.6, 1.8, 0.6);
+      const material = new THREE.MeshLambertMaterial({ color: 0x4caf50 });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      // Direction indicator (arrow)
+      const arrowGeometry = new THREE.ConeGeometry(0.2, 0.8, 8);
+      const arrowMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+      const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+      arrow.position.y = 1.2;
+      arrow.rotation.x = Math.PI;
+      mesh.add(arrow);
+
+      // Shadow plane
+      const shadowGeometry = new THREE.CircleGeometry(0.5, 16);
+      const shadowMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x000000, 
+        transparent: true, 
+        opacity: 0.3 
+      });
+      const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+      shadow.rotation.x = -Math.PI / 2;
+      shadow.position.y = 0.01;
+      mesh.add(shadow);
+
+      return mesh;
+    }
+
+    function createPlayerLabel() {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = 256;
+      canvas.height = 64;
+      
+      context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      
+      context.fillStyle = '#ffffff';
+      context.font = '24px monospace';
+      context.textAlign = 'center';
+      context.fillText('Player', canvas.width / 2, canvas.height / 2 + 8);
+      
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(4, 1, 1);
+      sprite.position.y = 2.5;
+      
+      return sprite;
+    }
+
+    // Handle window resize
+    function resizeCanvas() {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      controls.update();
+      renderer.render(scene, camera);
+      
+      frameCount++;
+      const now = Date.now();
+      if (now - lastFpsTime >= 1000) {
+        document.getElementById('fps').textContent = frameCount.toString();
+        frameCount = 0;
+        lastFpsTime = now;
+      }
+    }
+    animate();
+
+    function render3D(data) {
+      if (!data.playerPosition) {
+        // Wait for position data
+        return;
+      }
+
+      const pos = data.playerPosition;
+      const x = pos.x;
+      const y = pos.y;
+      const z = pos.z;
+
+      // Create or update player mesh
+      if (!playerMesh) {
+        playerMesh = createPlayerMesh();
+        scene.add(playerMesh);
+        
+        playerLabel = createPlayerLabel();
+        playerMesh.add(playerLabel);
+      }
+
+      // Update player position
+      playerMesh.position.set(x, y, z);
+
+      // Update player rotation based on yaw
+      if (data.yaw !== undefined) {
+        // Minecraft yaw: 0 = south, 90 = west, 180 = north, 270 = east
+        // Three.js: 0 = +X (east), rotate around Y axis
+        const yawRad = THREE.MathUtils.degToRad(-data.yaw - 90);
+        playerMesh.rotation.y = yawRad;
+      }
+
+      // Update pitch (head rotation)
+      if (data.pitch !== undefined && playerMesh.children[0]) {
+        const pitchRad = THREE.MathUtils.degToRad(-data.pitch);
+        playerMesh.children[0].rotation.x = pitchRad + Math.PI;
+      }
+
+      // Update camera target to follow player if enabled
+      if (followPlayer && playerMesh) {
+        controls.target.set(x, y, z);
+      }
+    }
+
+    // UI Controls
+    const followCheckbox = document.getElementById('follow-player');
+    const resetButton = document.getElementById('reset-camera');
+
+    followCheckbox.addEventListener('change', (e) => {
+      followPlayer = e.target.checked;
+      if (followPlayer && playerMesh) {
+        const pos = playerMesh.position;
+        controls.target.set(pos.x, pos.y, pos.z);
+      }
+    });
+
+    resetButton.addEventListener('click', () => {
+      followPlayer = false;
+      followCheckbox.checked = false;
+      camera.position.set(0, 50, 50);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    });
+
+    // Initial render
+    render3D({});
+  </script>
+</body>
+</html>

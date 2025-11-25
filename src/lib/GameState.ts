@@ -5,6 +5,7 @@ import { createConnection } from './connection.js';
 import { log } from './log.js';
 import { buildAuthInputPacket, createRandomMoveVectorGenerator } from './playerInput/movement.js';
 import { type Vec3 } from './types.js';
+import { gameStateBroadcaster } from './websocket/server.js';
 
 import { botConfig, type BotConfig } from '@/config/bot'
 import { env } from '@/config/env';
@@ -57,6 +58,8 @@ export class GameState {
   ableToSleep: number | undefined;
 
   private ticInterval: NodeJS.Timeout | null = null;
+  private lastBroadcastTime: number = 0;
+  private readonly BROADCAST_THROTTLE_MS = 50; // Broadcast at most every 50ms (~20fps)
 
   private constructor() {
     this.spawned = false;
@@ -88,13 +91,14 @@ export class GameState {
     this.lastGameTimeRealTime = Date.now();
     this.dayPhase = getDayPhase(this.gameTime);
     console.log(`dayPhase: ${this.dayPhase}`)
+    this.broadcastUpdate();
   }
 
   checkAutoReconnect() {
     if (!this.botConfig.night.autoDisconnectAtNight) return;
     if (this.sleepingPlayerCount <= 0) return;
 
-    if (this.overworldPlayercount - this.sleepingPlayerCount > 1) return;
+    if ((this.overworldPlayerCount ?? 0) - (this.sleepingPlayerCount ?? 0) > 1) return;
 
     const durationMs = this.botConfig.night.autoDisconnectAtNightDurationMs;
     this.reconnect(durationMs).catch((err) => {
@@ -118,6 +122,7 @@ export class GameState {
     this.permissionLevel = packet?.permission_level;
     this.currentTick = packet?.current_tick;
     this.startTic();
+    this.broadcastUpdate();
   }
 
   playerHasDied() {
@@ -255,6 +260,7 @@ export class GameState {
     if (pitch) this.pitch = pitch;
     if (yaw) this.yaw = yaw;
     if (head_yaw) this.headYaw = head_yaw;
+    this.broadcastUpdate();
   }
 
   move(newPosition: any, newRotation: any) {
@@ -291,6 +297,7 @@ export class GameState {
     // Add additional tic logic here
     if (this.playerPosition && this.spawned) {
       this.sendPlayerAuthInputPacket();
+      this.broadcastUpdate();
       return;
     } else {
       console.log('waiting to spawn')
@@ -315,6 +322,19 @@ export class GameState {
     this.currentTick = packet?.tick;
     //this.position = position;
     //console.log({ currentTick: this.currentTick })
+  }
+
+  /**
+   * Broadcasts gamestate updates to connected WebSocket clients.
+   * Throttled to avoid excessive updates.
+   */
+  private broadcastUpdate(): void {
+    const now = Date.now();
+    if (now - this.lastBroadcastTime < this.BROADCAST_THROTTLE_MS) {
+      return; // Throttle updates
+    }
+    this.lastBroadcastTime = now;
+    gameStateBroadcaster.broadcast(this);
   }
 
   /**

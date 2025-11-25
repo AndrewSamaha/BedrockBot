@@ -1,0 +1,68 @@
+# BedrockBot Cursor Rules
+
+## Project Overview
+This is a TypeScript Minecraft Bedrock Edition bot that maintains gamestate and provides real-time visualization capabilities.
+
+## Visualization System
+
+### WebSocket Server
+- Located in `src/lib/websocket/server.ts`
+- Broadcasts GameState updates to connected browser clients
+- Updates are throttled to ~20fps (50ms intervals) for performance
+- Zero overhead when no clients are connected
+
+### Browser Visualization
+- **Client**: `public/index.html` - Three.js-based 3D visualization
+- **Server Script**: `scripts/serve-visualization.js` - Simple HTTP server
+- Uses Three.js OrbitControls for pan/zoom/rotate camera controls
+- Real-time updates via WebSocket connection
+
+### When Updating Visualization
+
+**Allowed Changes:**
+- ✅ Modify `public/index.html` to enhance 3D rendering, add UI elements, or improve camera controls
+- ✅ Update `src/lib/websocket/server.ts` to add new fields to GameStateSnapshot
+- ✅ Extend GameState broadcasting in `src/lib/GameState.ts` to include new data
+- ✅ Add new visualization features (chunks, entities, paths, etc.)
+- ✅ Improve UI/UX of the visualization interface
+- ✅ Add new camera modes or controls
+- ✅ Optimize rendering performance
+
+**Guidelines:**
+- Maintain backward compatibility with existing WebSocket protocol when possible
+- Keep update throttling to prevent performance issues
+- Use Three.js CDN (no build step required for client)
+- Follow existing code style and patterns
+- Update `docs/visualization-implementation.md` when making architectural changes
+- Test visualization with `pnpm serve:vis` before committing
+
+**GameStateSnapshot Interface:**
+When adding new fields to the snapshot:
+1. Update the `GameStateSnapshot` interface in `src/lib/websocket/server.ts`
+2. Add field extraction in the `broadcast()` method
+3. Update the UI in `public/index.html` to display the new field
+4. Handle BigInt values properly (convert to string)
+
+**Three.js Best Practices:**
+- Use requestAnimationFrame for smooth 60fps rendering
+- Reuse meshes instead of recreating them each frame
+- Use instanced rendering for many similar objects (e.g., blocks)
+- Enable shadows only when needed
+- Dispose of geometries and materials when removing objects
+
+## Code Style
+- Use TypeScript strict mode
+- Import types with `import type { ... }` or `import { type ... }`
+- Follow existing folder structure under `src/`
+- Use `pnpm` for all package management
+
+## Testing Visualization
+1. Start bot: `pnpm dev`
+2. Serve visualization: `pnpm serve:vis`
+3. Open: `http://localhost:3000`
+4. Verify WebSocket connection and 3D rendering
+
+## Documentation
+- `docs/visualization-implementation.md` - Architecture and technical details
+- `docs/websocket-visualization.md` - Usage guide
+- `docs/websocket-troubleshooting.md` - Common issues

@@ -5,6 +5,7 @@ process.env.DEBUG = 'minecraft-protocol'
 import { env } from '@/config/env';
 import { initializeChatPipeline } from '@/lib/chat';
 import { createConnection } from '@/lib/connection';
+import { gameStateBroadcaster } from '@/lib/websocket/server';
 
 
 const admins = env.ADMIN_XUIDS;
@@ -15,6 +16,9 @@ console.log({ adminsenv: process.env.ADMIN_XUIDS })
 console.log(`Attempting to connect to ${env.BEDROCK_HOST}:${env.BEDROCK_PORT}...`);
 
 initializeChatPipeline({ username, admins });
+
+// Start WebSocket server for browser visualization
+gameStateBroadcaster.start(env.WEBSOCKET_PORT);
 
 // Initial connection
 createConnection().then(client => {
