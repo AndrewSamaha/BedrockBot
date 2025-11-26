@@ -1,6 +1,8 @@
 import createChunkColumn from 'prismarine-chunk';
 import createRegistry from 'prismarine-registry';
 
+import { gameState } from '@/lib/GameState';
+
 // pick the protocol/version you need
 const registry = createRegistry('bedrock_1.21.111');
 const ChunkColumn = createChunkColumn(registry);
@@ -19,15 +21,9 @@ const ChunkColumn = createChunkColumn(registry);
 const handler = {
   name: 'level_chunk' as const,
   fn: async (packet: any) => {
-    const { payload, ...otherPacketFields } = packet;
     const cc = new ChunkColumn(packet.x, packet.z);
     await cc.networkDecodeNoCache(packet.payload, packet.sub_chunk_count);
-    const blocks = [];
-    for (let x = 0; x < 16; x++) {
-      for (let z = 0; z < 16; z++) {
-        blocks.push(cc.getBlock(x, 0, z)); // Read some blocks in this chunk
-      }
-    }
+    gameState.world.setChunk(packet.x, packet.z, cc);
   }
 };
 
