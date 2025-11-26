@@ -252,6 +252,14 @@
       </div>
 
       <div class="info-section">
+        <h3>World</h3>
+        <div class="info-item">
+          <span class="info-label">Chunks Loaded:</span>
+          <span class="info-value" id="chunk-count">-</span>
+        </div>
+      </div>
+
+      <div class="info-section">
         <h3>Players</h3>
         <div class="info-item">
           <span class="info-label">Overworld:</span>
@@ -375,6 +383,9 @@
       document.getElementById('entity-id').textContent = data.entityId?.toString() ?? '-';
       document.getElementById('runtime-entity-id').textContent = data.runtimeEntityId?.toString() ?? '-';
 
+      // World
+      document.getElementById('chunk-count').textContent = data.chunkCount?.toString() ?? '-';
+
       // Update timestamp
       const timeSinceUpdate = Date.now() - data.timestamp;
       document.getElementById('last-update').textContent = `${timeSinceUpdate}ms ago`;
@@ -490,6 +501,11 @@
     let playerDirection = null;
     let playerLabel = null;
     let followPlayer = false;
+
+    // Chunk visualization
+    const chunkMeshes = new Map(); // Map of chunk keys to mesh objects
+    const chunkGroup = new THREE.Group();
+    scene.add(chunkGroup);
 
     function createPlayerMesh() {
       // Player body (green box)
@@ -614,6 +630,47 @@
       // Update camera target to follow player if enabled
       if (followPlayer && playerMesh) {
         controls.target.set(x, y, z);
+      }
+
+      // Update chunk visualization
+      if (data.chunkCoords) {
+        const currentChunkKeys = new Set();
+        
+        // Create or update chunk meshes
+        data.chunkCoords.forEach(([cx, cz]) => {
+          const chunkKey = `${cx},${cz}`;
+          currentChunkKeys.add(chunkKey);
+          
+          if (!chunkMeshes.has(chunkKey)) {
+            // Create a square at the base of the chunk
+            // Chunks are 16x16 blocks horizontally, positioned at chunk coordinates
+            const chunkGeometry = new THREE.PlaneGeometry(16, 16); // 16x16 square
+            const chunkMaterial = new THREE.MeshBasicMaterial({
+              color: 0x888888,
+              wireframe: true,
+              side: THREE.DoubleSide
+            });
+            const chunkMesh = new THREE.Mesh(chunkGeometry, chunkMaterial);
+            
+            // Position square at the base of the chunk (Y = -64 in Minecraft Bedrock)
+            // Rotate to lie flat on the XZ plane
+            chunkMesh.rotation.x = -Math.PI / 2;
+            chunkMesh.position.set(cx * 16 + 8, -64, cz * 16 + 8); // Base of chunk at Y=-64
+            
+            chunkGroup.add(chunkMesh);
+            chunkMeshes.set(chunkKey, chunkMesh);
+          }
+        });
+        
+        // Remove chunks that are no longer loaded
+        chunkMeshes.forEach((mesh, key) => {
+          if (!currentChunkKeys.has(key)) {
+            chunkGroup.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            chunkMeshes.delete(key);
+          }
+        });
       }
     }
 

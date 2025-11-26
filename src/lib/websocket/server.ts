@@ -15,6 +15,8 @@ export interface GameStateSnapshot {
   overworldPlayerCount?: number;
   sleepingPlayerCount?: number;
   ableToSleep?: number;
+  chunkCount?: number;
+  chunkCoords?: Array<[number, number]>;
   timestamp: number;
 }
 
@@ -125,6 +127,8 @@ class GameStateBroadcaster {
       overworldPlayerCount: gameState.overworldPlayerCount,
       sleepingPlayerCount: gameState.sleepingPlayerCount,
       ableToSleep: gameState.ableToSleep,
+      chunkCount: gameState.world.getChunkCount(),
+      chunkCoords: gameState.world.getAllChunkCoords(),
       timestamp: Date.now(),
     };
 

@@ -35,5 +35,18 @@ export class World {
     const lz = wz & 0xf;
     return chunk.getBlock(new Vec3(lx, wy, lz));
   }
+
+  /** Get the number of chunks currently loaded */
+  getChunkCount(): number {
+    return this.chunks.size;
+  }
+
+  /** Get all chunk coordinates as an array of [cx, cz] tuples */
+  getAllChunkCoords(): Array<[number, number]> {
+    return Array.from(this.chunks.keys()).map((key) => {
+      const [cx, cz] = key.split(',').map(Number);
+      return [cx, cz];
+    });
+  }
 }
 
