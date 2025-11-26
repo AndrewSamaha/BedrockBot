@@ -9,6 +9,7 @@ import { gameStateBroadcaster } from './websocket/server.js';
 
 import { botConfig, type BotConfig } from '@/config/bot'
 import { env } from '@/config/env';
+import { World, type World } from './World';
 
 const TIC_INTERVAL = 50;
 const MINECRAFT_DAY_LENGTH_IN_TICS = 24_000;
@@ -56,12 +57,14 @@ export class GameState {
   overworldPlayerCount: number | undefined;
   sleepingPlayerCount: number | undefined;
   ableToSleep: number | undefined;
+  world: World;
 
   private ticInterval: NodeJS.Timeout | null = null;
   private lastBroadcastTime: number = 0;
   private readonly BROADCAST_THROTTLE_MS = 50; // Broadcast at most every 50ms (~20fps)
 
   private constructor() {
+    this.world = new World();
     this.spawned = false;
     this.lastTic = 0;
     this.headYaw = 0;
