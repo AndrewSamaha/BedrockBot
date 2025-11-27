@@ -10,6 +10,7 @@ import { gameStateBroadcaster } from './websocket/server.js';
 import { botConfig, type BotConfig } from '@/config/bot'
 import { env } from '@/config/env';
 import { World, type World } from './World';
+import { subchunkRequest } from './serverCommands/index';
 
 const TIC_INTERVAL = 50;
 const MINECRAFT_DAY_LENGTH_IN_TICS = 24_000;
@@ -301,6 +302,10 @@ export class GameState {
     if (this.playerPosition && this.spawned) {
       this.sendPlayerAuthInputPacket();
       this.broadcastUpdate();
+
+      if (this.currentTick % 50n === 0n) {
+        subchunkRequest(this.client, this)
+      }
       return;
     } else {
       console.log('waiting to spawn')

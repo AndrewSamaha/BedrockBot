@@ -14,6 +14,7 @@ import deathInfo from './handlers/death_info';
 import error from './handlers/error.js';
 import gameRulesChanged from './handlers/game_rules_changed.js';
 import levelChunk from './handlers/chunks/level_chunk.js';
+import subchunk from './handlers/chunks/subchunk.js';
 import movePlayer from './handlers/move_player.js';
 import resourcePacks from './handlers/resource_packs.js';
 import setCommandsEnabled from './handlers/set_commands_enabled.js';
@@ -36,6 +37,7 @@ function loadHandlers(): ClientHandler[] {
     error,
     gameRulesChanged,
     levelChunk,
+    subchunk,
     movePlayer,
     resourcePacks,
     setCommandsEnabled,

@@ -5,6 +5,7 @@ import { log } from '@/lib/log';
 
 // barrel import move
 export { move } from './move';
+export { default as subchunkRequest } from './subchunk_request';
 
 export const say = (client: Client, username: string, message: string) => {
   const outgoingItem = {

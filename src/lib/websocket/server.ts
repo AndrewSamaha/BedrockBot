@@ -17,6 +17,8 @@ export interface GameStateSnapshot {
   ableToSleep?: number;
   chunkCount?: number;
   chunkCoords?: Array<[number, number]>;
+  playerChunkHighestBlocks?: Array<{ x: number; y: number; z: number }>;
+  playerChunkBlockStats?: { total: number; nonAir: number };
   timestamp: number;
 }
 
@@ -107,6 +109,22 @@ class GameStateBroadcaster {
       return undefined;
     };
 
+    // Get highest blocks in player's current chunk
+    let playerChunkHighestBlocks: Array<{ x: number; y: number; z: number }> | undefined = undefined;
+    let playerChunkBlockStats: { total: number; nonAir: number } | undefined = undefined;
+    if (gameState.playerPosition) {
+      const cx = Math.floor(gameState.playerPosition.x / 16);
+      const cz = Math.floor(gameState.playerPosition.z / 16);
+      const highestBlocks = gameState.world.getHighestBlocksInChunk(cx, cz);
+      const blockStats = gameState.world.getChunkBlockStats(cx, cz);
+      playerChunkHighestBlocks = highestBlocks.map(([lx, ly, lz]) => ({
+        x: cx * 16 + lx,
+        y: ly,
+        z: cz * 16 + lz,
+      }));
+      playerChunkBlockStats = blockStats;
+    }
+
     const snapshot: GameStateSnapshot = {
       playerPosition: gameState.playerPosition
         ? {
@@ -129,6 +147,8 @@ class GameStateBroadcaster {
       ableToSleep: gameState.ableToSleep,
       chunkCount: gameState.world.getChunkCount(),
       chunkCoords: gameState.world.getAllChunkCoords(),
+      playerChunkHighestBlocks,
+      playerChunkBlockStats,
       timestamp: Date.now(),
     };
 
