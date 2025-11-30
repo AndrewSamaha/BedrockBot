@@ -1,8 +1,5 @@
 import createChunkColumn from 'prismarine-chunk';
-import createRegistry from 'prismarine-registry';
-
 import { gameState } from '@/lib/GameState';
-import { Vec3 } from 'vec3';
 
 /*
 * Chunks (Bedrock)
@@ -19,6 +16,10 @@ import { Vec3 } from 'vec3';
 const handler = {
   name: 'level_chunk' as const,
   fn: async (packet: any) => {
+    if (!gameState.registry) {
+      console.log('Registry not initialized, skipping level_chunk processing');
+      return;
+    }
     const ChunkColumn = createChunkColumn(gameState.registry);
     const cc = new ChunkColumn({ x: packet.x, z: packet.z });
     await cc.networkDecodeNoCache(packet.payload, packet.sub_chunk_count);

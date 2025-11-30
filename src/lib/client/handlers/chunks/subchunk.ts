@@ -1,5 +1,4 @@
 import createChunkColumn from 'prismarine-chunk';
-import createRegistry from 'prismarine-registry';
 import { Vec3 } from "vec3";
 import { gameState } from '@/lib/GameState';
 
@@ -25,6 +24,12 @@ const handler = {
       console.log('   - no entries, exiting')
       return;
     }
+    if (!gameState.registry) {
+      console.log('   - registry not initialized, skipping subchunk processing');
+      return;
+    }
+
+    const ChunkColumn = createChunkColumn(gameState.registry);
     let cc = undefined;
 
     for (const entry of packet.entries) {
@@ -34,24 +39,27 @@ const handler = {
       const z = packet.origin.z + entry.dz;
       cc = gameState.world.getChunk(x, z) as any;
       if (!cc) {
-        console.log(`    creating a new chunkcolumn at ${chunkX}, ${chunkZ}`)
-        cc = new ChunkColumn({ x: chunkX, z: chunkZ });
-        gameState.world.setChunk(chunkX, chunkZ, cc);
+        console.log(`    creating a new chunkcolumn at ${x}, ${z}`)
+        cc = new ChunkColumn({ x, z });
+        gameState.world.setChunk(x, z, cc);
       } else {
-        console.log(`    using an existing chunkcolumn at ${entry.dx}, ${entry.dz}`)
+        console.log(`    using an existing chunkcolumn at ${x}, ${z}`)
       }
       await cc.networkDecodeSubChunkNoCache(y, entry.payload);
     }
 
-    if (DEBUG) {
+    if (DEBUG && cc) {
       for (let yy = -64; yy < -62; yy++) {
         for (let zz = -41-4; zz < -41+4; zz++) {
           let row = "";
           for (let xx = 57-4; xx < 57+4; xx++) {
-            const runtime_id = cc.getBlockStateId(new Vec3(xx, yy, zz));
-            const name = gameState.registry.blocksByRuntimeId[runtime_id]?.name;
-            if (runtime_id && name !== "air") {
-              console.log(`Block at (${xx}, ${yy}, ${zz}): ${runtime_id}`, name);
+            const state_id = cc.getBlockStateId(new Vec3(xx, yy, zz));
+            // getBlockStateId returns a state ID, not a runtime ID
+            // Use blocksByStateId instead of blocksByRuntimeId
+            const block = gameState.registry.blocksByStateId[state_id];
+            const name = block?.name;
+            if (state_id !== undefined && name && name !== "air") {
+              console.log(`Block at (${xx}, ${yy}, ${zz}): state_id=${state_id}, name=${name}`);
             }
           }
         }

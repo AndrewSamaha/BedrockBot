@@ -118,7 +118,7 @@ export class GameState {
 
     // Initialize registry
     this.registry = PrismarineRegistryLoader('bedrock_1.21.111');
-    const { block_network_ids_are_hashes } = { block_network_ids_are_hashes: true };
+    const block_network_ids_are_hashes = packet?.block_network_ids_are_hashes ?? true;
     this.registry.handleStartGame({ itemstates: [], block_network_ids_are_hashes });
 
     this.spawned = true;
