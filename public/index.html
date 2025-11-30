@@ -252,6 +252,26 @@
       </div>
 
       <div class="info-section">
+        <h3>World</h3>
+        <div class="info-item">
+          <span class="info-label">Chunks Loaded:</span>
+          <span class="info-value" id="chunk-count">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Subchunk Blocks:</span>
+          <span class="info-value" id="subchunk-blocks-count">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Player Chunk Blocks:</span>
+          <span class="info-value" id="player-chunk-blocks">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Player Chunk Non-Air:</span>
+          <span class="info-value" id="player-chunk-non-air">-</span>
+        </div>
+      </div>
+
+      <div class="info-section">
         <h3>Players</h3>
         <div class="info-item">
           <span class="info-label">Overworld:</span>
@@ -331,13 +351,119 @@
       ? `ws://localhost:${wsPort}`
       : `${wsProtocol}//${wsHost}:${wsPort}`;
     
-    console.log('Connecting to WebSocket:', wsUrl);
-    const ws = new WebSocket(wsUrl);
+    let ws = null;
+    let reconnectInterval = null;
+    let isConnecting = false;
 
     let updateCount = 0;
     let lastUpdateTime = Date.now();
     let frameCount = 0;
     let lastFpsTime = Date.now();
+
+    // Function to connect to WebSocket
+    function connectWebSocket() {
+      // Don't try to connect if already connected or currently connecting
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return;
+      }
+      
+      if (isConnecting) {
+        return;
+      }
+      
+      isConnecting = true;
+      console.log('Connecting to WebSocket:', wsUrl);
+      
+      try {
+        ws = new WebSocket(wsUrl);
+        setupWebSocketHandlers();
+      } catch (error) {
+        console.error('Failed to create WebSocket:', error);
+        isConnecting = false;
+        scheduleReconnect();
+      }
+    }
+
+    // Function to setup WebSocket event handlers
+    function setupWebSocketHandlers() {
+      ws.onopen = () => {
+        console.log('✅ Connected to WebSocket server');
+        isConnecting = false;
+        
+        // Clear reconnection interval if it exists
+        if (reconnectInterval) {
+          clearInterval(reconnectInterval);
+          reconnectInterval = null;
+        }
+        
+        document.getElementById('status').classList.remove('disconnected');
+        document.getElementById('status').classList.add('connected');
+        document.getElementById('status-text').textContent = 'Connected';
+        document.querySelector('.status-indicator').classList.remove('disconnected');
+        document.querySelector('.status-indicator').classList.add('connected');
+      };
+
+      ws.onclose = (event) => {
+        console.log('❌ Disconnected from WebSocket server', event.code, event.reason);
+        isConnecting = false;
+        
+        document.getElementById('status').classList.remove('connected');
+        document.getElementById('status').classList.add('disconnected');
+        document.getElementById('status-text').textContent = `Disconnected (${event.code})`;
+        document.querySelector('.status-indicator').classList.remove('connected');
+        document.querySelector('.status-indicator').classList.add('disconnected');
+        
+        // Show helpful error message
+        if (event.code === 1006) {
+          console.error('Connection closed abnormally. Is the bot running?');
+          document.getElementById('status-text').textContent = 'Disconnected - Reconnecting...';
+        }
+        
+        // Schedule reconnection
+        scheduleReconnect();
+      };
+
+      ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        isConnecting = false;
+        
+        // Only show detailed error message on first connection attempt
+        if (!reconnectInterval) {
+          console.error('Make sure:');
+          console.error('1. The bot is running (pnpm dev)');
+          console.error('2. WebSocket server started on port', wsPort);
+          console.error('3. No firewall blocking the connection');
+        }
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          updateUI(data);
+          render3D(data);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+    }
+
+    // Function to schedule reconnection attempts
+    function scheduleReconnect() {
+      // Clear any existing reconnection interval
+      if (reconnectInterval) {
+        clearInterval(reconnectInterval);
+      }
+      
+      // Try to reconnect every second
+      reconnectInterval = setInterval(() => {
+        if (!ws || ws.readyState === WebSocket.CLOSED) {
+          connectWebSocket();
+        }
+      }, 1000);
+    }
+
+    // Initial connection attempt
+    connectWebSocket();
 
     // Update UI elements
     function updateUI(data) {
@@ -375,54 +501,23 @@
       document.getElementById('entity-id').textContent = data.entityId?.toString() ?? '-';
       document.getElementById('runtime-entity-id').textContent = data.runtimeEntityId?.toString() ?? '-';
 
+      // World
+      document.getElementById('chunk-count').textContent = data.chunkCount?.toString() ?? '-';
+      document.getElementById('subchunk-blocks-count').textContent = data.playerSubchunkBlocks?.length.toString() ?? '-';
+      if (data.playerChunkBlockStats) {
+        document.getElementById('player-chunk-blocks').textContent = data.playerChunkBlockStats.total.toLocaleString();
+        document.getElementById('player-chunk-non-air').textContent = data.playerChunkBlockStats.nonAir.toLocaleString();
+      } else {
+        document.getElementById('player-chunk-blocks').textContent = '-';
+        document.getElementById('player-chunk-non-air').textContent = '-';
+      }
+
       // Update timestamp
       const timeSinceUpdate = Date.now() - data.timestamp;
       document.getElementById('last-update').textContent = `${timeSinceUpdate}ms ago`;
       document.getElementById('update-count').textContent = updateCount.toString();
     }
 
-    // WebSocket event handlers
-    ws.onopen = () => {
-      console.log('✅ Connected to WebSocket server');
-      document.getElementById('status').classList.remove('disconnected');
-      document.getElementById('status').classList.add('connected');
-      document.getElementById('status-text').textContent = 'Connected';
-      document.querySelector('.status-indicator').classList.remove('disconnected');
-      document.querySelector('.status-indicator').classList.add('connected');
-    };
-
-    ws.onclose = (event) => {
-      console.log('❌ Disconnected from WebSocket server', event.code, event.reason);
-      document.getElementById('status').classList.remove('connected');
-      document.getElementById('status').classList.add('disconnected');
-      document.getElementById('status-text').textContent = `Disconnected (${event.code})`;
-      document.querySelector('.status-indicator').classList.remove('connected');
-      document.querySelector('.status-indicator').classList.add('disconnected');
-      
-      // Show helpful error message
-      if (event.code === 1006) {
-        console.error('Connection closed abnormally. Is the bot running?');
-        document.getElementById('status-text').textContent = 'Disconnected - Is the bot running?';
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('❌ WebSocket error:', error);
-      console.error('Make sure:');
-      console.error('1. The bot is running (pnpm dev)');
-      console.error('2. WebSocket server started on port', wsPort);
-      console.error('3. No firewall blocking the connection');
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        updateUI(data);
-        render3D(data);
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
 
     // Three.js setup
     const canvas = document.getElementById('canvas');
@@ -490,6 +585,24 @@
     let playerDirection = null;
     let playerLabel = null;
     let followPlayer = false;
+
+    // Chunk visualization
+    const chunkMeshes = new Map(); // Map of chunk keys to mesh objects
+    const chunkGroup = new THREE.Group();
+    scene.add(chunkGroup);
+
+    // Highest blocks visualization
+    const blockMeshes = new Map(); // Map of block keys to mesh objects
+    const blocksGroup = new THREE.Group();
+    scene.add(blocksGroup);
+    
+    // Shared geometry and material for blocks (for efficiency)
+    const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const blockMaterial = new THREE.MeshLambertMaterial({
+      color: 0x4caf50,
+      transparent: true,
+      opacity: 0.3
+    });
 
     function createPlayerMesh() {
       // Player body (green box)
@@ -615,6 +728,74 @@
       if (followPlayer && playerMesh) {
         controls.target.set(x, y, z);
       }
+
+      // Update chunk visualization
+      if (data.chunkCoords) {
+        const currentChunkKeys = new Set();
+        
+        // Create or update chunk meshes
+        data.chunkCoords.forEach(([cx, cz]) => {
+          const chunkKey = `${cx},${cz}`;
+          currentChunkKeys.add(chunkKey);
+          
+          if (!chunkMeshes.has(chunkKey)) {
+            // Create a square at the base of the chunk
+            // Chunks are 16x16 blocks horizontally, positioned at chunk coordinates
+            const chunkGeometry = new THREE.PlaneGeometry(16, 16); // 16x16 square
+            const chunkMaterial = new THREE.MeshBasicMaterial({
+              color: 0x888888,
+              wireframe: true,
+              side: THREE.DoubleSide
+            });
+            const chunkMesh = new THREE.Mesh(chunkGeometry, chunkMaterial);
+            
+            // Position square at the base of the chunk (Y = -64 in Minecraft Bedrock)
+            // Rotate to lie flat on the XZ plane
+            chunkMesh.rotation.x = -Math.PI / 2;
+            chunkMesh.position.set(cx * 16 + 8, -64, cz * 16 + 8); // Base of chunk at Y=-64
+            
+            chunkGroup.add(chunkMesh);
+            chunkMeshes.set(chunkKey, chunkMesh);
+          }
+        });
+        
+        // Remove chunks that are no longer loaded
+        chunkMeshes.forEach((mesh, key) => {
+          if (!currentChunkKeys.has(key)) {
+            chunkGroup.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            chunkMeshes.delete(key);
+          }
+        });
+      }
+
+      // Update subchunk blocks visualization (accumulate blocks from all visited subchunks)
+      if (data.playerSubchunkBlocks) {
+        console.log(`Rendering ${data.playerSubchunkBlocks.length} blocks from player's current subchunk (total rendered: ${blockMeshes.size})`);
+        
+        // Create or update block meshes (accumulate, don't replace)
+        let newBlocksAdded = 0;
+        data.playerSubchunkBlocks.forEach((block) => {
+          const blockKey = `${block.x},${block.y},${block.z}`;
+          
+          // Only add blocks that haven't been rendered yet
+          if (!blockMeshes.has(blockKey)) {
+            // Create a new block mesh
+            const blockMesh = new THREE.Mesh(blockGeometry, blockMaterial);
+            blockMesh.position.set(block.x + 0.5, block.y + 0.5, block.z + 0.5); // Center the block
+            blocksGroup.add(blockMesh);
+            blockMeshes.set(blockKey, blockMesh);
+            newBlocksAdded++;
+          }
+        });
+        
+        if (newBlocksAdded > 0) {
+          console.log(`Added ${newBlocksAdded} new blocks. Total blocks rendered: ${blockMeshes.size}`);
+        }
+      }
+      // Note: We no longer clear blocks when data.playerSubchunkBlocks is undefined
+      // This allows blocks from previous subchunks to remain visible
     }
 
     // UI Controls

@@ -1,4 +1,5 @@
 import { type Client } from 'bedrock-protocol';
+import PrismarineRegistryLoader, { type RegistryBedrock } from "prismarine-registry";
 
 import { ConversationManager } from './chat/conversation.js';
 import { createConnection } from './connection.js';
@@ -9,6 +10,8 @@ import { gameStateBroadcaster } from './websocket/server.js';
 
 import { botConfig, type BotConfig } from '@/config/bot'
 import { env } from '@/config/env';
+import { World, type World } from './World';
+import { subchunkRequest } from './serverCommands/index';
 
 const TIC_INTERVAL = 50;
 const MINECRAFT_DAY_LENGTH_IN_TICS = 24_000;
@@ -56,12 +59,18 @@ export class GameState {
   overworldPlayerCount: number | undefined;
   sleepingPlayerCount: number | undefined;
   ableToSleep: number | undefined;
+  world: World;
+  registry: RegistryBedrock | undefined;
+  receivedSubChunks: number[][];
 
   private ticInterval: NodeJS.Timeout | null = null;
   private lastBroadcastTime: number = 0;
   private readonly BROADCAST_THROTTLE_MS = 50; // Broadcast at most every 50ms (~20fps)
+  private lastHeartbeatTime: number = 0;
+  private readonly HEARTBEAT_INTERVAL_MS = 5000; // Run heartbeat every 5 seconds
 
   private constructor() {
+    this.world = new World();
     this.spawned = false;
     this.lastTic = 0;
     this.headYaw = 0;
@@ -70,6 +79,7 @@ export class GameState {
     this.sleeping = false;
     this.isReconnecting = false;
     this.botConfig = botConfig;
+    this.receivedSubChunks = [];
   }
 
   static getInstance(): GameState {
@@ -81,16 +91,13 @@ export class GameState {
   }
 
   setTime(gameTime: number) {
-    console.log(`gameState.setTime(${gameTime}) `)
     if (this.gameTime !== undefined) {
       const gameTimeDiff = gameTime - this.gameTime;
       const realTimeDiff = Date.now() - this.lastGameTimeRealTime;
-      console.log(`gameTime: ${this.gameTime} | diffSinceLast: ${gameTimeDiff} | realTimeDiff: ${realTimeDiff} ms`)
     }
     this.gameTime = gameTime;
     this.lastGameTimeRealTime = Date.now();
     this.dayPhase = getDayPhase(this.gameTime);
-    console.log(`dayPhase: ${this.dayPhase}`)
     this.broadcastUpdate();
   }
 
@@ -112,6 +119,11 @@ export class GameState {
     if (this.spawned) {
       return;
     }
+
+    // Initialize registry
+    this.registry = PrismarineRegistryLoader('bedrock_1.21.111');
+    const block_network_ids_are_hashes = packet?.block_network_ids_are_hashes ?? true;
+    this.registry.handleStartGame({ itemstates: [], block_network_ids_are_hashes });
 
     this.spawned = true;
     this.seed = packet?.seed;
@@ -287,13 +299,36 @@ export class GameState {
     this.client.queue('move_player', movePlayerObj);
   }
 
-  tic() {
-    if (this.currentTick % 50n === 0n) {
+  /**
+   * Heartbeat method that runs periodically (every 5 seconds)
+   * Contains logic that should run on a regular schedule regardless of server tick timing
+   */
+  heartbeat() {
+    const now = Date.now();
+    
+    // Log position and rotation
+    if (this.playerPosition) {
       const { x, y, z } = this.playerPosition;
       const { yaw, pitch, headYaw } = this;
       console.log(`${this.currentTick} - ${new Date().toISOString()} - ${x}, ${y}, ${z} - ${yaw} ${pitch} ${headYaw}`);
     }
+
+    // Request subchunk data
+    if (this.playerPosition && this.spawned && this.client) {
+      subchunkRequest(this.client, this);
+    }
+  }
+
+  tic() {
     this.lastTic = Date.now();
+    
+    // Check if it's time to run heartbeat (every 5 seconds)
+    const now = Date.now();
+    if (now - this.lastHeartbeatTime >= this.HEARTBEAT_INTERVAL_MS) {
+      this.lastHeartbeatTime = now;
+      this.heartbeat();
+    }
+
     // Add additional tic logic here
     if (this.playerPosition && this.spawned) {
       this.sendPlayerAuthInputPacket();
