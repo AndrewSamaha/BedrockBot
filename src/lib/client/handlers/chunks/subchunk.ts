@@ -19,7 +19,6 @@ const DEBUG = false;
 const handler = {
   name: 'subchunk' as const,
   fn: async (packet: any) => {
-    console.log('received subchunk')
     if (!packet.entries) {
       console.log('   - no entries, exiting')
       return;
@@ -43,7 +42,7 @@ const handler = {
         cc = new ChunkColumn({ x, z });
         gameState.world.setChunk(x, z, cc);
       } else {
-        console.log(`    using an existing chunkcolumn at ${x}, ${z}`)
+        /* console.log(`    using an existing chunkcolumn at ${x}, ${z}`) */
       }
       await cc.networkDecodeSubChunkNoCache(y, entry.payload);
       const received = gameState.receivedSubChunks.find((coords) => coords[0] === x && coords[1] === y && coords[2] === z);

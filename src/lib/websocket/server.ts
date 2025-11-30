@@ -126,14 +126,14 @@ class GameStateBroadcaster {
         z: cz * 16 + lz,
       }));
       playerChunkBlockStats = blockStats;
-      console.log('------- Broadcast -------')
-      console.log(`looking up subchunk at ${cx}, ${cz}`)
-      console.log(`received subchunks: ${JSON.stringify(gameState.receivedSubChunks)}`)
+      // console.log('------- Broadcast -------')
+      // console.log(`looking up subchunk at ${cx}, ${cz}`)
+      // console.log(`received subchunks: ${JSON.stringify(gameState.receivedSubChunks)}`)
       const key = [cx, cy, cz];
       const hasSubchunk = gameState.receivedSubChunks.some(
         ([sx, sy, sz]) => sx === cx && sy === cy && sz === cz
       );
-      console.log('player subchunk received?', hasSubchunk, 'key=', key);
+      /* console.log('player subchunk received?', hasSubchunk, 'key=', key); */
       // Get all blocks from the player's current subchunk
       // Pass the registry so we can use getBlockStateId and blocksByStateId for proper block name lookup
       playerSubchunkBlocks = gameState.world.getAllBlocksInSubchunk(cx, cy, cz, gameState.registry);

@@ -143,8 +143,8 @@ export class World {
 
     // Iterate through all blocks in the subchunk (16x16x16)
     // Use world coordinates for all axes (as per the helper function)
-    for (let lx = 0; lx < 1; lx++) {
-      for (let lz = 0; lz < 1; lz++) {
+    for (let lx = 0; lx < 16; lx++) {
+      for (let lz = 0; lz < 16; lz++) {
         for (let wy = minY; wy <= maxY; wy++) {
           const worldX = worldXBase + lx;
           const worldZ = worldZBase + lz;
@@ -159,29 +159,29 @@ export class World {
           totalChecked++;
 
           // Debug logging for first few blocks and every 100th
-          console.log(`[getAllBlocksInSubchunk] Block at (${worldX}, ${wy}, ${worldZ}): state_id=${stateId}, name=${name || 'undefined'}`);
+          //console.log(`[getAllBlocksInSubchunk] Block at (${worldX}, ${wy}, ${worldZ}): state_id=${stateId}, name=${name || 'undefined'}`);
 
           if (stateId === undefined) {
             undefinedStateId++;
           } else if (!block) {
             missingInRegistry++;
-            if (totalChecked <= 20) {
-              console.log(`[getAllBlocksInSubchunk] State ID ${stateId} not found in registry.blocksByStateId`);
-            }
+            // if (totalChecked <= 20) {
+            //   console.log(`[getAllBlocksInSubchunk] State ID ${stateId} not found in registry.blocksByStateId`);
+            // }
           } else if (name === 'air') {
             airFound++;
           } else if (name && name !== 'air') {
             nonAirFound++;
-            console.log(`[getAllBlocksInSubchunk] Block at (${worldX}, ${wy}, ${worldZ}): state_id=${stateId}, name=${name}`);
+            /* console.log(`[getAllBlocksInSubchunk] Block at (${worldX}, ${wy}, ${worldZ}): state_id=${stateId}, name=${name}`); */
             blocks.push({ x: worldX, y: wy, z: worldZ });
           }
         }
       }
     }
 
-    console.log(`[getAllBlocksInSubchunk] Completed: checked ${totalChecked} blocks`);
-    console.log(`[getAllBlocksInSubchunk] Stats: undefinedStateId=${undefinedStateId}, missingInRegistry=${missingInRegistry}, airFound=${airFound}, nonAirFound=${nonAirFound}, returning ${blocks.length} blocks`);
-
+    // console.log(`[getAllBlocksInSubchunk] Completed: checked ${totalChecked} blocks`);
+    // console.log(`[getAllBlocksInSubchunk] Stats: undefinedStateId=${undefinedStateId}, missingInRegistry=${missingInRegistry}, airFound=${airFound}, nonAirFound=${nonAirFound}, returning ${blocks.length} blocks`);
+    //
     return blocks;
   }
 }
