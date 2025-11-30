@@ -17,9 +17,9 @@ const command = (client: Client, gS: GameState) => {
     },
     requests: [
       {
-        dx: Math.floor(gS.playerPosition.x / 16),
-        dy: Math.floor(gS.playerPosition.y / 16),
-        dz: Math.floor(gS.playerPosition.z / 16)
+        dx: 5,
+        dy: -4,
+        dz: 0
       }
     ]
   }

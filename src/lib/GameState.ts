@@ -61,10 +61,13 @@ export class GameState {
   ableToSleep: number | undefined;
   world: World;
   registry: RegistryBedrock | undefined;
+  receivedSubChunks: number[][];
 
   private ticInterval: NodeJS.Timeout | null = null;
   private lastBroadcastTime: number = 0;
   private readonly BROADCAST_THROTTLE_MS = 50; // Broadcast at most every 50ms (~20fps)
+  private lastHeartbeatTime: number = 0;
+  private readonly HEARTBEAT_INTERVAL_MS = 5000; // Run heartbeat every 5 seconds
 
   private constructor() {
     this.world = new World();
@@ -76,6 +79,7 @@ export class GameState {
     this.sleeping = false;
     this.isReconnecting = false;
     this.botConfig = botConfig;
+    this.receivedSubChunks = [];
   }
 
   static getInstance(): GameState {
@@ -295,21 +299,40 @@ export class GameState {
     this.client.queue('move_player', movePlayerObj);
   }
 
-  tic() {
-    if (this.currentTick % 50n === 0n) {
+  /**
+   * Heartbeat method that runs periodically (every 5 seconds)
+   * Contains logic that should run on a regular schedule regardless of server tick timing
+   */
+  heartbeat() {
+    const now = Date.now();
+    
+    // Log position and rotation
+    if (this.playerPosition) {
       const { x, y, z } = this.playerPosition;
       const { yaw, pitch, headYaw } = this;
       console.log(`${this.currentTick} - ${new Date().toISOString()} - ${x}, ${y}, ${z} - ${yaw} ${pitch} ${headYaw}`);
     }
+
+    // Request subchunk data
+    if (this.playerPosition && this.spawned && this.client) {
+      subchunkRequest(this.client, this);
+    }
+  }
+
+  tic() {
     this.lastTic = Date.now();
+    
+    // Check if it's time to run heartbeat (every 5 seconds)
+    const now = Date.now();
+    if (now - this.lastHeartbeatTime >= this.HEARTBEAT_INTERVAL_MS) {
+      this.lastHeartbeatTime = now;
+      this.heartbeat();
+    }
+
     // Add additional tic logic here
     if (this.playerPosition && this.spawned) {
       this.sendPlayerAuthInputPacket();
       this.broadcastUpdate();
-
-      if (this.currentTick % 50n === 0n) {
-        subchunkRequest(this.client, this)
-      }
       return;
     } else {
       console.log('waiting to spawn')

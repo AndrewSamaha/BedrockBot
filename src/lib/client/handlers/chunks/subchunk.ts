@@ -14,7 +14,7 @@ import { gameState } from '@/lib/GameState';
 * The origin is the chunk coordinate, and entries specify offsets from that origin.
 */
 
-const DEBUG = true;
+const DEBUG = false;
 
 const handler = {
   name: 'subchunk' as const,
@@ -46,6 +46,10 @@ const handler = {
         console.log(`    using an existing chunkcolumn at ${x}, ${z}`)
       }
       await cc.networkDecodeSubChunkNoCache(y, entry.payload);
+      const received = gameState.receivedSubChunks.find((coords) => coords[0] === x && coords[1] === y && coords[2] === z);
+      if (!received?.length) {
+        gameState.receivedSubChunks.push([x,y,z]);
+      }
     }
 
     if (DEBUG && cc) {

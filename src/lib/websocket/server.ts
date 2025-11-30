@@ -19,6 +19,7 @@ export interface GameStateSnapshot {
   chunkCoords?: Array<[number, number]>;
   playerChunkHighestBlocks?: Array<{ x: number; y: number; z: number }>;
   playerChunkBlockStats?: { total: number; nonAir: number };
+  playerSubchunkBlocks?: Array<{ x: number; y: number; z: number }>;
   timestamp: number;
 }
 
@@ -112,9 +113,11 @@ class GameStateBroadcaster {
     // Get highest blocks in player's current chunk
     let playerChunkHighestBlocks: Array<{ x: number; y: number; z: number }> | undefined = undefined;
     let playerChunkBlockStats: { total: number; nonAir: number } | undefined = undefined;
+    let playerSubchunkBlocks: Array<{ x: number; y: number; z: number }> | undefined = undefined;
     if (gameState.playerPosition) {
       const cx = Math.floor(gameState.playerPosition.x / 16);
       const cz = Math.floor(gameState.playerPosition.z / 16);
+      const cy = Math.floor(gameState.playerPosition.y / 16);
       const highestBlocks = gameState.world.getHighestBlocksInChunk(cx, cz);
       const blockStats = gameState.world.getChunkBlockStats(cx, cz);
       playerChunkHighestBlocks = highestBlocks.map(([lx, ly, lz]) => ({
@@ -123,6 +126,17 @@ class GameStateBroadcaster {
         z: cz * 16 + lz,
       }));
       playerChunkBlockStats = blockStats;
+      console.log('------- Broadcast -------')
+      console.log(`looking up subchunk at ${cx}, ${cz}`)
+      console.log(`received subchunks: ${JSON.stringify(gameState.receivedSubChunks)}`)
+      const key = [cx, cy, cz];
+      const hasSubchunk = gameState.receivedSubChunks.some(
+        ([sx, sy, sz]) => sx === cx && sy === cy && sz === cz
+      );
+      console.log('player subchunk received?', hasSubchunk, 'key=', key);
+      // Get all blocks from the player's current subchunk
+      // Pass the registry so we can use getBlockStateId and blocksByStateId for proper block name lookup
+      playerSubchunkBlocks = gameState.world.getAllBlocksInSubchunk(cx, cy, cz, gameState.registry);
     }
 
     const snapshot: GameStateSnapshot = {
@@ -149,6 +163,7 @@ class GameStateBroadcaster {
       chunkCoords: gameState.world.getAllChunkCoords(),
       playerChunkHighestBlocks,
       playerChunkBlockStats,
+      playerSubchunkBlocks,
       timestamp: Date.now(),
     };
 

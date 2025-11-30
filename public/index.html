@@ -258,8 +258,8 @@
           <span class="info-value" id="chunk-count">-</span>
         </div>
         <div class="info-item">
-          <span class="info-label">Highest Blocks:</span>
-          <span class="info-value" id="highest-blocks-count">-</span>
+          <span class="info-label">Subchunk Blocks:</span>
+          <span class="info-value" id="subchunk-blocks-count">-</span>
         </div>
         <div class="info-item">
           <span class="info-label">Player Chunk Blocks:</span>
@@ -503,7 +503,7 @@
 
       // World
       document.getElementById('chunk-count').textContent = data.chunkCount?.toString() ?? '-';
-      document.getElementById('highest-blocks-count').textContent = data.playerChunkHighestBlocks?.length.toString() ?? '-';
+      document.getElementById('subchunk-blocks-count').textContent = data.playerSubchunkBlocks?.length.toString() ?? '-';
       if (data.playerChunkBlockStats) {
         document.getElementById('player-chunk-blocks').textContent = data.playerChunkBlockStats.total.toLocaleString();
         document.getElementById('player-chunk-non-air').textContent = data.playerChunkBlockStats.nonAir.toLocaleString();
@@ -770,13 +770,13 @@
         });
       }
 
-      // Update highest blocks visualization
-      if (data.playerChunkHighestBlocks) {
-        console.log(`Rendering ${data.playerChunkHighestBlocks.length} highest blocks`);
+      // Update subchunk blocks visualization (show all blocks from player's current subchunk)
+      if (data.playerSubchunkBlocks) {
+        console.log(`Rendering ${data.playerSubchunkBlocks.length} blocks from player's subchunk`);
         const currentBlockKeys = new Set();
         
         // Create or update block meshes
-        data.playerChunkHighestBlocks.forEach((block) => {
+        data.playerSubchunkBlocks.forEach((block) => {
           const blockKey = `${block.x},${block.y},${block.z}`;
           currentBlockKeys.add(blockKey);
           
@@ -789,7 +789,7 @@
           }
         });
         
-        // Remove blocks that are no longer in the current chunk
+        // Remove blocks that are no longer in the current subchunk
         blockMeshes.forEach((mesh, key) => {
           if (!currentBlockKeys.has(key)) {
             blocksGroup.remove(mesh);
