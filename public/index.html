@@ -770,39 +770,32 @@
         });
       }
 
-      // Update subchunk blocks visualization (show all blocks from player's current subchunk)
+      // Update subchunk blocks visualization (accumulate blocks from all visited subchunks)
       if (data.playerSubchunkBlocks) {
-        console.log(`Rendering ${data.playerSubchunkBlocks.length} blocks from player's subchunk`);
-        const currentBlockKeys = new Set();
+        console.log(`Rendering ${data.playerSubchunkBlocks.length} blocks from player's current subchunk (total rendered: ${blockMeshes.size})`);
         
-        // Create or update block meshes
+        // Create or update block meshes (accumulate, don't replace)
+        let newBlocksAdded = 0;
         data.playerSubchunkBlocks.forEach((block) => {
           const blockKey = `${block.x},${block.y},${block.z}`;
-          currentBlockKeys.add(blockKey);
           
+          // Only add blocks that haven't been rendered yet
           if (!blockMeshes.has(blockKey)) {
             // Create a new block mesh
             const blockMesh = new THREE.Mesh(blockGeometry, blockMaterial);
             blockMesh.position.set(block.x + 0.5, block.y + 0.5, block.z + 0.5); // Center the block
             blocksGroup.add(blockMesh);
             blockMeshes.set(blockKey, blockMesh);
+            newBlocksAdded++;
           }
         });
         
-        // Remove blocks that are no longer in the current subchunk
-        blockMeshes.forEach((mesh, key) => {
-          if (!currentBlockKeys.has(key)) {
-            blocksGroup.remove(mesh);
-            blockMeshes.delete(key);
-          }
-        });
-      } else {
-        // Clear all blocks if no data
-        blockMeshes.forEach((mesh) => {
-          blocksGroup.remove(mesh);
-        });
-        blockMeshes.clear();
+        if (newBlocksAdded > 0) {
+          console.log(`Added ${newBlocksAdded} new blocks. Total blocks rendered: ${blockMeshes.size}`);
+        }
       }
+      // Note: We no longer clear blocks when data.playerSubchunkBlocks is undefined
+      // This allows blocks from previous subchunks to remain visible
     }
 
     // UI Controls
