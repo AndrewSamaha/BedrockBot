@@ -32,6 +32,8 @@ const startGame = {
     client.queue('set_local_player_as_initialized', {
       runtime_entity_id: packet.runtime_entity_id // Keep as BigInt (varint64)
     });
+    // Testing this
+    client.queue('client_cache_status', { enabled: false });
 
   }
 };

@@ -1,4 +1,5 @@
 import { type Client } from 'bedrock-protocol';
+import PrismarineRegistryLoader, { type RegistryBedrock } from "prismarine-registry";
 
 import { ConversationManager } from './chat/conversation.js';
 import { createConnection } from './connection.js';
@@ -59,6 +60,7 @@ export class GameState {
   sleepingPlayerCount: number | undefined;
   ableToSleep: number | undefined;
   world: World;
+  registry: RegistryBedrock | undefined;
 
   private ticInterval: NodeJS.Timeout | null = null;
   private lastBroadcastTime: number = 0;
@@ -116,6 +118,11 @@ export class GameState {
     if (this.spawned) {
       return;
     }
+
+    // Initialize registry
+    this.registry = PrismarineRegistryLoader('bedrock_1.21.111');
+    const { block_network_ids_are_hashes } = { block_network_ids_are_hashes: true };
+    this.registry.handleStartGame({ itemstates: [], block_network_ids_are_hashes });
 
     this.spawned = true;
     this.seed = packet?.seed;
