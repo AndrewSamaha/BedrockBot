@@ -87,16 +87,13 @@ export class GameState {
   }
 
   setTime(gameTime: number) {
-    console.log(`gameState.setTime(${gameTime}) `)
     if (this.gameTime !== undefined) {
       const gameTimeDiff = gameTime - this.gameTime;
       const realTimeDiff = Date.now() - this.lastGameTimeRealTime;
-      console.log(`gameTime: ${this.gameTime} | diffSinceLast: ${gameTimeDiff} | realTimeDiff: ${realTimeDiff} ms`)
     }
     this.gameTime = gameTime;
     this.lastGameTimeRealTime = Date.now();
     this.dayPhase = getDayPhase(this.gameTime);
-    console.log(`dayPhase: ${this.dayPhase}`)
     this.broadcastUpdate();
   }
 
