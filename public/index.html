@@ -586,6 +586,11 @@
     let playerLabel = null;
     let followPlayer = false;
 
+    // Other players visualization
+    const otherPlayerMeshes = new Map(); // Map of username to player mesh object
+    const otherPlayersGroup = new THREE.Group();
+    scene.add(otherPlayersGroup);
+
     // Chunk visualization
     const chunkMeshes = new Map(); // Map of chunk keys to mesh objects
     const chunkGroup = new THREE.Group();
@@ -635,7 +640,7 @@
       return mesh;
     }
 
-    function createPlayerLabel() {
+    function createPlayerLabel(text = 'Player') {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       canvas.width = 256;
@@ -647,7 +652,7 @@
       context.fillStyle = '#ffffff';
       context.font = '24px monospace';
       context.textAlign = 'center';
-      context.fillText('Player', canvas.width / 2, canvas.height / 2 + 8);
+      context.fillText(text, canvas.width / 2, canvas.height / 2 + 8);
       
       const texture = new THREE.CanvasTexture(canvas);
       const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
@@ -656,6 +661,41 @@
       sprite.position.y = 2.5;
       
       return sprite;
+    }
+
+    function createOtherPlayerMesh(username, color = 0x2196F3) {
+      // Player body (blue box for other players, different from main player)
+      const geometry = new THREE.BoxGeometry(0.6, 1.8, 0.6);
+      const material = new THREE.MeshLambertMaterial({ color });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      // Direction indicator (arrow)
+      const arrowGeometry = new THREE.ConeGeometry(0.2, 0.8, 8);
+      const arrowMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+      const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+      arrow.position.y = 1.2;
+      arrow.rotation.x = Math.PI;
+      mesh.add(arrow);
+
+      // Shadow plane
+      const shadowGeometry = new THREE.CircleGeometry(0.5, 16);
+      const shadowMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x000000, 
+        transparent: true, 
+        opacity: 0.3 
+      });
+      const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+      shadow.rotation.x = -Math.PI / 2;
+      shadow.position.y = 0.01;
+      mesh.add(shadow);
+
+      // Username label
+      const label = createPlayerLabel(username);
+      mesh.add(label);
+
+      return mesh;
     }
 
     // Handle window resize
@@ -727,6 +767,64 @@
       // Update camera target to follow player if enabled
       if (followPlayer && playerMesh) {
         controls.target.set(x, y, z);
+      }
+
+      // Update other players visualization
+      if (data.playerList) {
+        const currentPlayerUsernames = new Set();
+        
+        // Create or update player meshes
+        data.playerList.forEach((player) => {
+          if (!player.username || !player.position) return;
+          
+          currentPlayerUsernames.add(player.username);
+          
+          let playerMeshObj = otherPlayerMeshes.get(player.username);
+          
+          if (!playerMeshObj) {
+            // Create a new player mesh with a unique color based on username hash
+            const hash = player.username.split('').reduce((acc, char) => {
+              return char.charCodeAt(0) + ((acc << 5) - acc);
+            }, 0);
+            const color = Math.abs(hash % 0xffffff);
+            playerMeshObj = createOtherPlayerMesh(player.username, color);
+            otherPlayersGroup.add(playerMeshObj);
+            otherPlayerMeshes.set(player.username, playerMeshObj);
+          }
+          
+          // Update position
+          const pos = player.position;
+          playerMeshObj.position.set(pos.x, pos.y, pos.z);
+          
+          // Update rotation based on yaw
+          if (player.yaw !== undefined) {
+            const yawRad = THREE.MathUtils.degToRad(-player.yaw - 90);
+            playerMeshObj.rotation.y = yawRad;
+          }
+          
+          // Update pitch (head rotation)
+          if (player.pitch !== undefined && playerMeshObj.children[0]) {
+            const pitchRad = THREE.MathUtils.degToRad(-player.pitch);
+            playerMeshObj.children[0].rotation.x = pitchRad + Math.PI;
+          }
+        });
+        
+        // Remove players that are no longer in the list
+        otherPlayerMeshes.forEach((mesh, username) => {
+          if (!currentPlayerUsernames.has(username)) {
+            otherPlayersGroup.remove(mesh);
+            // Dispose of geometries and materials
+            mesh.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                child.geometry.dispose();
+                if (child.material instanceof THREE.Material) {
+                  child.material.dispose();
+                }
+              }
+            });
+            otherPlayerMeshes.delete(username);
+          }
+        });
       }
 
       // Update chunk visualization

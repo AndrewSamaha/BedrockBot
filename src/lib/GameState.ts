@@ -62,6 +62,7 @@ export class GameState {
   world: World;
   registry: RegistryBedrock | undefined;
   receivedSubChunks: number[][];
+  playerList: unknown[];
 
   private ticInterval: NodeJS.Timeout | null = null;
   private lastBroadcastTime: number = 0;
@@ -80,6 +81,7 @@ export class GameState {
     this.isReconnecting = false;
     this.botConfig = botConfig;
     this.receivedSubChunks = [];
+    this.playerList = [];
   }
 
   static getInstance(): GameState {
@@ -305,7 +307,7 @@ export class GameState {
    */
   heartbeat() {
     const now = Date.now();
-    
+
     // Log position and rotation
     if (this.playerPosition) {
       const { x, y, z } = this.playerPosition;
@@ -321,7 +323,7 @@ export class GameState {
 
   tic() {
     this.lastTic = Date.now();
-    
+
     // Check if it's time to run heartbeat (every 5 seconds)
     const now = Date.now();
     if (now - this.lastHeartbeatTime >= this.HEARTBEAT_INTERVAL_MS) {
