@@ -25,6 +25,7 @@ import updateAttributes from './handlers/update_attributes.js';
 import setTime from './handlers/set_time';
 import levelEventGeneric from './handlers/level_event_generic.ts';
 import correctPlayerMovePosition from './handlers/correct_player_move_prediction.ts';
+import playerList from './handlers/player_list';
 
 // Function to load all handlers statically
 function loadHandlers(): ClientHandler[] {
@@ -47,7 +48,8 @@ function loadHandlers(): ClientHandler[] {
     updateAttributes,
     setTime,
     levelEventGeneric,
-    correctPlayerMovePosition
+    correctPlayerMovePosition,
+    playerList
   ];
 
   console.log(`Successfully loaded ${handlers.length} handlers`);
