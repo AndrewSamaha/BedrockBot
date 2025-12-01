@@ -20,6 +20,13 @@ export interface GameStateSnapshot {
   playerChunkHighestBlocks?: Array<{ x: number; y: number; z: number }>;
   playerChunkBlockStats?: { total: number; nonAir: number };
   playerSubchunkBlocks?: Array<{ x: number; y: number; z: number }>;
+  playerList?: Array<{
+    username: string;
+    position: { x: number; y: number; z: number };
+    pitch?: number;
+    yaw?: number;
+    head_yaw?: number;
+  }>;
   timestamp: number;
 }
 
@@ -164,6 +171,13 @@ class GameStateBroadcaster {
       playerChunkHighestBlocks,
       playerChunkBlockStats,
       playerSubchunkBlocks,
+      playerList: gameState.playerList?.map((player: any) => ({
+        username: player.username,
+        position: player.position,
+        pitch: player.pitch,
+        yaw: player.yaw,
+        head_yaw: player.head_yaw,
+      })),
       timestamp: Date.now(),
     };
 
