@@ -1,6 +1,8 @@
 import { log } from '@/lib/log';
 import { gameState } from '@/lib/GameState';
 
+// This is called both with new players connect AND when the bot connects
+// so that we get all the currently connected players
 const addPlayer = {
   name: 'add_player' as const,
   fn: (packet: any) => {
