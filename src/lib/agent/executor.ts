@@ -28,7 +28,7 @@ export class AgentExecutor {
 
     // Create LLM model with tools bound
     this.chatModel = new ChatOpenAI({
-      modelName: env.OPENAI_API_KEY ? 'gpt-5-mini' : 'gpt-4o-mini', // Use better model if API key available
+      modelName: 'gpt-5-mini',
       temperature: 1,
       maxTokens: 1000,
     }).bindTools(this.tools);
