@@ -588,10 +588,12 @@ No additional dependencies required.
 
 ### Test Coverage
 
-- **Total**: 111 tests across all agent components
+- **Total**: 139 tests across all agent components
 - **WorldStateRequestManager**: 18 tests
 - **Snapshot & Graph utilities**: 32 tests
 - **Tools**: 61 tests (30 worldState, 31 actions)
+- **AgentExecutor**: 14 tests
+- **ChatIntegration**: 14 tests
 
 ## Implementation Decisions
 
