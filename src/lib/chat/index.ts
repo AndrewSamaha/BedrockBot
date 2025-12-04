@@ -6,6 +6,7 @@ import { gameState } from "@/lib/GameState";
 import { log } from "@/lib/log";
 import { incomingMessageQueue } from "@/lib/queues";
 import { ItemStatus } from "@/lib/types";
+import { processChatMessage, initializeAgentExecutor } from '@/lib/agent/chatIntegration.js';
 
 type InitializeChatPipelineParams = {
   username: string;
@@ -36,18 +37,21 @@ export function initializeChatPipeline({ username, admins }: InitializeChatPipel
       if (packetData.type.toLowerCase() === "chat") {
         log({ call: "chat_model_invoke", message: packetData.message });
         try {
-          const conversation = gameState.conversationManager?.newMessage(packetData.source_name, packetData.message);
-          if (!conversation) {
-            throw new Error('Unable to find conversation')
-          }
-          const chatResponse = await gameState.conversationManager?.generateChatResponse(conversation);
+          // Try agent first, fall back to simple chat
+          const chatResponse = await processChatMessage(
+            gameState,
+            packetData.message,
+            packetData.source_name,
+            client,
+            username as string
+          );
+          
           if (chatResponse) {
             say(client, username as string, chatResponse);
             nextMessage.markSuccess({ chatResponse });
           } else {
             log({ error: "Chat response was null" });
-            log({ chatResponse });
-            nextMessage.markSuccess({ chatResponse });
+            nextMessage.markSuccess({ chatResponse: null });
           }
           return;
         } catch (error) {

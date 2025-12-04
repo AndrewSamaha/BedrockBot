@@ -52,6 +52,7 @@ export class GameState extends EventEmitter {
   gameRules: unknown | undefined;
   attributes: unknown | undefined;
   conversationManager: undefined | ConversationManager;
+  agentExecutor: undefined | any; // AgentExecutor - avoid circular import
   sleeping: boolean | undefined;
   reconnectTimeout: NodeJS.Timeout | null = null;
   isReconnecting: boolean;
