@@ -154,90 +154,142 @@ async function getSubchunkData(chunkX: number, chunkY: number, chunkZ: number) {
 
 ## Practical Implementation Plan
 
-### Phase 1: Request Manager Foundation
+### Phase 1: Request Manager Foundation ✅ COMPLETE
 
-1. **Create `WorldStateRequestManager` class**
-   - Implement request tracking with Map
-   - Add timeout handling (2-5 seconds default)
-   - Add cleanup for stale requests
-   - Log request/response pairs for debugging
+**Status**: Implemented and tested
 
-2. **Add EventEmitter support to GameState**
-   - Make GameState extend EventEmitter or contain an EventEmitter instance
-   - Add `addReceivedSubchunk(x, y, z)` method that:
+1. **Create `WorldStateRequestManager` class** ✅
+   - ✅ Implemented request tracking with Map
+   - ✅ Added timeout handling (5 seconds default, configurable)
+   - ✅ Added cleanup for stale requests (every 30 seconds)
+   - ✅ Log request/response pairs for debugging
+   - **Location**: `src/lib/agent/WorldStateRequestManager.ts`
+   - **Tests**: `src/lib/agent/WorldStateRequestManager.test.ts` (18 tests)
+
+2. **Add EventEmitter support to GameState** ✅
+   - ✅ Made GameState extend EventEmitter
+   - ✅ Added `addReceivedSubchunk(x, y, z)` method that:
      - Updates the `receivedSubChunks` array
      - Emits `'subchunk-received'` event with coordinates `{ x, y, z }`
-   - Add `addReceivedChunk(x, z)` method that:
-     - Updates chunk data in GameState.world
+   - ✅ Added `addReceivedChunk(x, z)` method that:
      - Emits `'chunk-received'` event with coordinates `{ x, z }`
-   - Modify packet handlers to call these methods instead of directly mutating arrays:
-     - Update `src/lib/client/handlers/chunks/subchunk.ts` to call `gameState.addReceivedSubchunk()`
-     - Update `src/lib/client/handlers/chunks/level_chunk.ts` to call `gameState.addReceivedChunk()`
+   - ✅ Modified packet handlers:
+     - `src/lib/client/handlers/chunks/subchunk.ts` calls `gameState.addReceivedSubchunk()`
+     - `src/lib/client/handlers/chunks/level_chunk.ts` calls `gameState.addReceivedChunk()`
 
-3. **Set up RequestManager event subscriptions**
-   - Initialize RequestManager instance (can be standalone or attached to GameState)
-   - Subscribe to GameState events in RequestManager constructor:
-     - `gameState.on('subchunk-received', (coords) => this.handleSubchunkReceived(coords))`
-     - `gameState.on('chunk-received', (coords) => this.handleChunkReceived(coords))`
-   - Implement `handleSubchunkReceived()` and `handleChunkReceived()` methods that:
-     - Check pending requests for matching coordinates
-     - Retrieve block data from GameState.world
-     - Fulfill matching promises with data
-     - Clean up fulfilled requests
+3. **Set up RequestManager event subscriptions** ✅
+   - ✅ RequestManager initialized in GameState constructor
+   - ✅ Subscribes to GameState events in RequestManager constructor:
+     - `gameState.on('subchunk-received', ...)`
+     - `gameState.on('chunk-received', ...)`
+   - ✅ Implemented `handleSubchunkReceived()` and `handleChunkReceived()` methods
+   - ✅ RequestManager accessible via `gameState.worldStateRequestManager`
 
-### Phase 2: LangGraph Integration
+**Implementation Notes**:
+- EventEmitter pattern chosen for decoupling - handlers don't need to know about RequestManager
+- RequestManager automatically fulfills promises when matching events fire
+- Default timeout: 5 seconds (configurable via constructor)
+- Cleanup interval: 30 seconds (cleans requests older than 2x timeout)
 
-1. **Define AgentState interface**
-   - Include GameState snapshot type
-   - Include message history
-   - Include pending requests tracking
+### Phase 2: LangGraph Integration ✅ COMPLETE
 
-2. **Create state snapshot utility**
-   - Function to create GameStateSnapshot from GameState
-   - Include relevant fields: position, rotation, chunks, players, etc.
-   - Handle BigInt serialization (convert to string)
+**Status**: Implemented and tested
 
-3. **Set up LangGraph state graph**
-   - Define state schema
-   - Create initial state from GameState
-   - Set up checkpointing for state persistence
+1. **Define AgentState interface** ✅
+   - ✅ Defined in `src/lib/agent/types.ts`
+   - ✅ Includes GameState snapshot type
+   - ✅ Includes message history (BaseMessage[])
+   - ✅ Includes pending requests tracking (Map<string, RequestStatus>)
+   - ✅ Includes lastUpdate timestamp
 
-### Phase 3: Tool Development
+2. **Create state snapshot utility** ✅
+   - ✅ Function `createGameStateSnapshot()` in `src/lib/agent/snapshot.ts`
+   - ✅ Includes relevant fields: position, rotation, chunks, players, game time, etc.
+   - ✅ Handles BigInt serialization (currentTick → string)
+   - ✅ Safely handles missing data (try/catch for chunk operations)
+   - ✅ Reuses existing `GameStateSnapshot` interface from websocket server
+   - **Tests**: `src/lib/agent/snapshot.test.ts` (13 tests)
 
-1. **Convert existing commands to LangChain Tools**
-   - Wrap existing command handlers
-   - Define Zod schemas for parameters
-   - Add tool descriptions for LLM
+3. **Set up LangGraph state graph** ✅
+   - ✅ Defined state schema with channels (messages, gameState, pendingRequests, lastUpdate)
+   - ✅ Created helper functions: `createInitialAgentState()`, `updateGameStateSnapshot()`, `addMessage()`, `addMessages()`
+   - ✅ Set up basic graph structure with placeholder nodes
+   - ✅ Optional checkpointing support (via `checkpointSaver` parameter)
+   - **Location**: `src/lib/agent/graph.ts`
+   - **Tests**: `src/lib/agent/graph.test.ts` (19 tests)
 
-2. **Create world state query tools**
-   - `getSubchunkData` - uses Request Manager
-   - `getChunkData` - uses Request Manager
-   - `getPlayerPosition` - reads from snapshot
-   - `getNearbyPlayers` - reads from snapshot
+**Implementation Notes**:
+- State snapshots complement EventEmitter pattern (snapshots for reading, EventEmitter for async requests)
+- Graph uses placeholder nodes ready for Phase 4 implementation
+- Checkpointing is optional - graph compiles with or without it
 
-3. **Create action tools**
-   - `move` - wraps existing move command
-   - `teleport` - wraps existing teleport command
-   - `build` - wraps existing build commands
-   - `look` - wraps existing look commands
+### Phase 3: Tool Development ✅ COMPLETE
 
-### Phase 4: Agent Orchestration
+**Status**: Implemented and tested
+
+1. **Convert existing commands to LangChain Tools** ✅
+   - ✅ Wrapped existing command handlers
+   - ✅ Defined Zod schemas for all parameters
+   - ✅ Added descriptive tool descriptions for LLM
+   - ✅ All tools return JSON.stringify() responses
+
+2. **Create world state query tools** ✅
+   - ✅ `getPlayerPosition` - Returns bot position and rotation
+   - ✅ `getNearbyPlayers` - Lists players with optional distance filtering
+   - ✅ `getSubchunkData` - Uses RequestManager for async subchunk data
+   - ✅ `getChunkData` - Uses RequestManager for async chunk data
+   - ✅ `getBlockAt` - Gets block info at coordinates (requires loaded chunk)
+   - ✅ `getGameStateSummary` - Returns overall game state summary
+   - **Location**: `src/lib/agent/tools/worldState/` (each tool in separate file)
+   - **Tests**: 6 test files, 30 tests total
+
+3. **Create action tools** ✅
+   - ✅ `move` - Moves bot towards target position with optional yaw/pitch
+   - ✅ `teleport` - Instantly teleports bot (coordinates or player name)
+   - ✅ `look` - Changes viewing direction (yaw/pitch or preset directions)
+   - ✅ `fill` - Fills rectangular region with blocks
+   - ✅ `say` - Sends chat message to all players
+   - **Location**: `src/lib/agent/tools/actions/` (each tool in separate file)
+   - **Tests**: 5 test files, 31 tests total
+
+**Implementation Notes**:
+- **Tool organization**: Each tool factory in its own file within `worldState/` or `actions/` subdirectories
+- **Entry point**: `tools/index.ts` exports `createAllTools()` function
+- **Error handling**: All tools return JSON with error field on failure
+- **Response size limits**: `getSubchunkData` limits to 100 blocks for response size
+- **Tool naming**: Uses snake_case for tool names (LangChain convention)
+- **Total**: 11 tools (6 query, 5 action), 61 tests passing
+
+### Phase 4: Agent Orchestration 🔄 IN PROGRESS
+
+**Status**: Ready to implement
 
 1. **Set up LangGraph workflow**
+   - Implement actual nodes (currently placeholders):
+     - `update_state` - Update gameState snapshot before LLM calls
+     - `llm_call` - Call LLM with tools bound
+     - `execute_tools` - Execute tool calls from LLM
    - Use Supervisor pattern for multi-agent coordination (if needed)
    - Or use simple agent executor for single-agent flow
-   - Define nodes: LLM call → tool execution → state update → decision
+   - Define edges: START → update_state → llm_call → execute_tools → END
 
 2. **Integrate with chat pipeline**
    - Replace or extend existing `ConversationManager`
    - Route agent-capable conversations to LangGraph
    - Maintain backward compatibility with simple chat
+   - Bind tools to LLM model using `createAllTools()`
 
 3. **Add error handling**
-   - Tool timeout handling
+   - Tool timeout handling (already in RequestManager)
    - Network error recovery
    - Invalid input handling
    - Graceful degradation
+
+**Implementation Notes**:
+- Graph structure already set up in `src/lib/agent/graph.ts`
+- Tools ready to bind via `createAllTools(client, gameState, username)`
+- Need to implement actual node logic (currently placeholders)
+- Consider using LangGraph's built-in tool calling support
 
 ## Key Design Principles
 
@@ -392,6 +444,50 @@ No additional dependencies required.
 
 6. **Advanced Error Recovery**: Retry logic, fallback strategies, learning from failures
 
+## Implementation Status
+
+### Completed Phases
+
+- ✅ **Phase 1**: Request Manager Foundation (18 tests)
+- ✅ **Phase 2**: LangGraph Integration (32 tests)
+- ✅ **Phase 3**: Tool Development (61 tests)
+
+### Current Phase
+
+- 🔄 **Phase 4**: Agent Orchestration (Ready to implement)
+
+### Test Coverage
+
+- **Total**: 111 tests across all agent components
+- **WorldStateRequestManager**: 18 tests
+- **Snapshot & Graph utilities**: 32 tests
+- **Tools**: 61 tests (30 worldState, 31 actions)
+
+## Implementation Decisions
+
+### EventEmitter Pattern
+- **Decision**: Use EventEmitter pattern for async coordination instead of direct handler calls
+- **Rationale**: Keeps packet handlers decoupled from RequestManager
+- **Implementation**: GameState extends EventEmitter, emits events when chunks/subchunks received
+- **Benefit**: Handlers only update GameState, RequestManager automatically reacts
+
+### State Snapshots vs EventEmitter
+- **Decision**: Use both patterns - they serve different purposes
+- **State Snapshots**: For reading current state (position, players, time, etc.)
+- **EventEmitter**: For async request/response coordination (chunks/subchunks)
+- **Rationale**: Snapshots provide point-in-time views, EventEmitter handles async operations
+
+### Tool Organization
+- **Decision**: Each tool factory in separate file within subdirectories
+- **Structure**: `tools/worldState/` and `tools/actions/` subdirectories
+- **Rationale**: Better maintainability, easier to find and modify tools
+- **Pattern**: Factory functions (`create*Tool()`) that return DynamicStructuredTool instances
+
+### RequestManager Location
+- **Decision**: Initialize RequestManager in GameState constructor
+- **Access**: Via `gameState.worldStateRequestManager`
+- **Rationale**: Single instance, accessible to all tools, lifecycle tied to GameState
+
 ## References
 
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
@@ -399,3 +495,4 @@ No additional dependencies required.
 - Existing command system: `src/lib/command/`
 - GameState implementation: `src/lib/GameState.ts`
 - Packet handlers: `src/lib/client/handlers/`
+- Agent implementation: `src/lib/agent/`
