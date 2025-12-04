@@ -260,36 +260,68 @@ async function getSubchunkData(chunkX: number, chunkY: number, chunkZ: number) {
 - **Tool naming**: Uses snake_case for tool names (LangChain convention)
 - **Total**: 11 tools (6 query, 5 action), 61 tests passing
 
-### Phase 4: Agent Orchestration 🔄 IN PROGRESS
+### Phase 4: Agent Orchestration ✅ COMPLETE
 
-**Status**: Ready to implement
+**Status**: Implemented and integrated
 
-1. **Set up LangGraph workflow**
-   - Implement actual nodes (currently placeholders):
-     - `update_state` - Update gameState snapshot before LLM calls
-     - `llm_call` - Call LLM with tools bound
-     - `execute_tools` - Execute tool calls from LLM
-   - Use Supervisor pattern for multi-agent coordination (if needed)
-   - Or use simple agent executor for single-agent flow
-   - Define edges: START → update_state → llm_call → execute_tools → END
+1. **Set up LangGraph workflow** ✅
+   - ✅ Implemented `AgentExecutor` class in `src/lib/agent/executor.ts`
+   - ✅ Implemented `update_state` node:
+     - Refreshes GameState snapshot before each LLM call
+     - Uses `updateGameStateSnapshot()` helper function
+     - Ensures agent always has current world state
+   - ✅ Implemented `llm_call` node:
+     - Creates dynamic system prompt with current game state context
+     - Includes position, time of day, player count, spawn status
+     - Calls LLM with tools bound via `.bindTools()`
+     - Handles LLM errors gracefully (returns error message to state)
+     - Logs responses and tool call counts for debugging
+   - ✅ Implemented `execute_tools` node:
+     - Finds tools by name from tool list
+     - Executes each tool call with provided arguments
+     - Creates `ToolMessage` responses for LangChain
+     - Handles individual tool errors (doesn't stop execution)
+     - Returns tool results to state for next LLM call
+   - ✅ Graph flow: START → update_state → llm_call → (conditional) → execute_tools → llm_call (loop) → END
+   - ✅ Conditional edge: Loops back to `llm_call` if tool calls exist, otherwise ends
+   - ✅ Model selection: Uses `gpt-4o` if API key available, otherwise `gpt-4.1-nano`
 
-2. **Integrate with chat pipeline**
-   - Replace or extend existing `ConversationManager`
-   - Route agent-capable conversations to LangGraph
-   - Maintain backward compatibility with simple chat
-   - Bind tools to LLM model using `createAllTools()`
+2. **Integrate with chat pipeline** ✅
+   - ✅ Created `chatIntegration.ts` module:
+     - `initializeAgentExecutor()` - Sets up executor after client connects
+     - `processChatMessage()` - Routes messages to agent or simple chat
+   - ✅ Updated `src/lib/chat/index.ts`:
+     - Uses `processChatMessage()` for all chat messages
+     - Automatically uses agent when available
+     - Falls back to simple chat if agent fails or unavailable
+   - ✅ Updated `src/lib/client/handlers/start_game.ts`:
+     - Initializes agent executor when game starts
+     - Agent ready to process messages immediately after spawn
+   - ✅ Added `agentExecutor` property to GameState:
+     - Stored as optional property (avoids circular imports)
+     - Accessible via `gameState.agentExecutor`
+   - ✅ Maintains backward compatibility:
+     - Falls back to `ConversationManager` if agent unavailable
+     - Simple chat still works if agent initialization fails
 
-3. **Add error handling**
-   - Tool timeout handling (already in RequestManager)
-   - Network error recovery
-   - Invalid input handling
-   - Graceful degradation
+3. **Add error handling** ✅
+   - ✅ LLM errors: Caught and returned as error messages in state
+   - ✅ Tool errors: Individual tool failures don't stop execution
+   - ✅ Missing tools: Returns error message instead of crashing
+   - ✅ Network errors: Handled by RequestManager timeouts (already implemented)
+   - ✅ Invalid input: Tools validate with Zod schemas (already implemented)
+   - ✅ Graceful degradation: Falls back to simple chat if agent fails
+   - ✅ Comprehensive logging: All errors logged with context for debugging
 
 **Implementation Notes**:
-- Graph structure already set up in `src/lib/agent/graph.ts`
-- Tools ready to bind via `createAllTools(client, gameState, username)`
-- Need to implement actual node logic (currently placeholders)
-- Consider using LangGraph's built-in tool calling support
+- **AgentExecutor class**: Self-contained executor that manages graph lifecycle
+- **Tool binding**: Tools bound to LLM model via `.bindTools()` method
+- **State management**: GameState snapshot refreshed before each LLM call
+- **Multi-step execution**: Agent can call multiple tools in sequence automatically
+- **Tool calling loop**: Graph automatically loops until no more tool calls needed
+- **System prompt**: Dynamic prompt includes current game state for context-aware decisions
+- **Error recovery**: Errors don't crash agent, returned as messages for LLM to handle
+- **Location**: `src/lib/agent/executor.ts` (AgentExecutor), `src/lib/agent/chatIntegration.ts` (integration)
 
 ## Key Design Principles
 
@@ -319,6 +351,107 @@ async function getSubchunkData(chunkX: number, chunkY: number, chunkZ: number) {
 - Clear error messages returned to LLM
 - Request manager cleans up stale requests
 - Graceful degradation when operations fail
+
+## Complete Agent Execution Flow
+
+### End-to-End Message Processing
+
+```
+1. User sends chat message in-game
+   → Packet received by bot
+   → Added to incomingMessageQueue
+
+2. Chat pipeline processes message
+   → initializeChatPipeline() polling interval fires
+   → Calls processChatMessage(gameState, message, speakerName, client, username)
+
+3. Agent executor processes message
+   → Checks if agentExecutor available in gameState
+   → Calls executor.processMessage(userMessage, speakerName)
+   → Creates initial AgentState with:
+     - HumanMessage with user's message
+     - Fresh GameState snapshot
+     - Empty pending requests
+
+4. LangGraph workflow executes
+   a. update_state node:
+      → Refreshes GameState snapshot
+      → Updates state.gameState with latest world data
+   
+   b. llm_call node:
+      → Creates system prompt with current game state
+      → Prepares messages: [SystemMessage, ...state.messages]
+      → Calls LLM with tools bound
+      → LLM responds with text and/or tool calls
+      → Adds AIMessage to state
+   
+   c. Conditional edge:
+      → Checks if LLM response has tool_calls
+      → If yes: routes to execute_tools
+      → If no: routes to END
+   
+   d. execute_tools node (if tool calls exist):
+      → Finds each tool by name
+      → Executes tool with arguments
+      → Creates ToolMessage for each result
+      → Adds tool results to state
+      → Routes back to llm_call (loop)
+   
+   e. Loop continues until:
+      → LLM responds without tool calls, OR
+      → Maximum iterations reached (safety limit)
+
+5. Final response extracted
+   → Gets last message from final state
+   → Extracts text content
+   → Returns to chat pipeline
+
+6. Response sent to user
+   → say(client, username, response)
+   → Message appears in-game chat
+```
+
+### Tool Execution Within Agent Flow
+
+When LLM calls a tool during execution:
+
+```
+1. LLM decides to call tool (e.g., getSubchunkData)
+   → Includes tool call in response
+   → Tool call includes: name, arguments, call_id
+
+2. execute_tools node processes tool call
+   → Finds tool by name: tools.find(t => t.name === 'getSubchunkData')
+   → Calls tool.invoke({ chunkX: 5, chunkY: 2, chunkZ: 5 })
+
+3. Tool executes (example: getSubchunkData)
+   → Checks if subchunk already received
+   → If not: calls requestManager.requestSubchunk(5, 2, 5)
+   → RequestManager sends packet, creates promise
+   → Tool awaits promise (max 5 seconds)
+
+4. Background packet handler receives response
+   → Parses subchunk data
+   → Updates gameState.world
+   → Calls gameState.addReceivedSubchunk(5, 2, 5)
+   → GameState emits 'subchunk-received' event
+
+5. RequestManager fulfills promise
+   → Event listener receives event
+   → Finds matching pending request
+   → Retrieves block data from gameState.world
+   → Resolves promise with data
+
+6. Tool returns result
+   → Returns JSON string with block data
+   → execute_tools creates ToolMessage
+   → ToolMessage added to state
+
+7. LLM receives tool result
+   → Next llm_call includes ToolMessage in context
+   → LLM can make next decision based on data
+   → Process repeats until task complete
+```
 
 ## Example Flow: Requesting Subchunk Data
 
@@ -451,10 +584,7 @@ No additional dependencies required.
 - ✅ **Phase 1**: Request Manager Foundation (18 tests)
 - ✅ **Phase 2**: LangGraph Integration (32 tests)
 - ✅ **Phase 3**: Tool Development (61 tests)
-
-### Current Phase
-
-- 🔄 **Phase 4**: Agent Orchestration (Ready to implement)
+- ✅ **Phase 4**: Agent Orchestration (Fully integrated)
 
 ### Test Coverage
 
@@ -487,6 +617,13 @@ No additional dependencies required.
 - **Decision**: Initialize RequestManager in GameState constructor
 - **Access**: Via `gameState.worldStateRequestManager`
 - **Rationale**: Single instance, accessible to all tools, lifecycle tied to GameState
+
+### Agent Executor Architecture
+- **Decision**: Created separate `AgentExecutor` class instead of extending ConversationManager
+- **Rationale**: Separation of concerns - executor handles LangGraph workflow, ConversationManager handles simple chat
+- **Integration**: Executor initialized after game start, stored in `gameState.agentExecutor`
+- **Fallback**: Chat pipeline tries agent first, falls back to simple chat if unavailable
+- **Lifecycle**: Executor created once per game session, persists for entire session
 
 ## References
 
