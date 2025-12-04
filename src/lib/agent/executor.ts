@@ -25,12 +25,12 @@ export class AgentExecutor {
     this.client = client;
     this.username = username;
     this.tools = createAllTools(client, gameState, username);
-    
+
     // Create LLM model with tools bound
     this.chatModel = new ChatOpenAI({
-      modelName: env.OPENAI_API_KEY ? 'gpt-4o' : 'gpt-4.1-nano', // Use better model if API key available
-      temperature: 0.7,
-      maxTokens: 500,
+      modelName: env.OPENAI_API_KEY ? 'gpt-5-mini' : 'gpt-4o-mini', // Use better model if API key available
+      temperature: 1,
+      maxTokens: 1000,
     }).bindTools(this.tools);
 
     // Create graph with node implementations
@@ -79,16 +79,20 @@ export class AgentExecutor {
     // LLM call node - calls LLM with tools
     graph.addNode('llm_call', async (state: AgentState) => {
       try {
+        // Filter messages to ensure tool_calls are followed by ToolMessages
+        // OpenAI requires that every AIMessage with tool_calls has corresponding ToolMessages
+        const filteredMessages = this.filterMessagesForLLM(state.messages);
+
         // Prepare messages for LLM (include system prompt with game state context)
         const systemPrompt = this.createSystemPrompt(state.gameState);
         const messages = [
           new SystemMessage(systemPrompt),
-          ...state.messages,
+          ...filteredMessages,
         ];
 
         // Call LLM with tools
         const response = await this.chatModel.invoke(messages);
-        
+
         log({
           agentExecutor: 'llm_call',
           responseContent: response.content,
@@ -114,7 +118,7 @@ export class AgentExecutor {
     // Execute tools node - executes tool calls from LLM
     graph.addNode('execute_tools', async (state: AgentState) => {
       const lastMessage = state.messages[state.messages.length - 1];
-      
+
       // Check if last message has tool calls
       if (!lastMessage || !('tool_calls' in lastMessage) || !lastMessage.tool_calls || lastMessage.tool_calls.length === 0) {
         // No tool calls, we're done
@@ -180,7 +184,7 @@ export class AgentExecutor {
     // Set up graph edges
     graph.addEdge(START, 'update_state');
     graph.addEdge('update_state', 'llm_call');
-    
+
     // Conditional: if tool calls exist, execute them and loop back; otherwise end
     graph.addConditionalEdges(
       'llm_call',
@@ -201,10 +205,84 @@ export class AgentExecutor {
         end: END,
       }
     );
-    
+
     graph.addEdge('execute_tools', 'llm_call'); // Loop back to LLM after tool execution
 
     return graph.compile();
+  }
+
+  /**
+   * Filter messages to ensure tool_calls are properly followed by ToolMessages
+   * OpenAI requires that every AIMessage with tool_calls has corresponding ToolMessages
+   * This filters out incomplete tool call sequences to prevent API errors
+   */
+  private filterMessagesForLLM(messages: any[]): any[] {
+    const filtered: any[] = [];
+    let i = 0;
+
+    while (i < messages.length) {
+      const message = messages[i];
+
+      // Check if this is an AIMessage with tool_calls
+      if (message && 'tool_calls' in message && message.tool_calls && message.tool_calls.length > 0) {
+        const toolCallIds = new Set(message.tool_calls.map((tc: any) => tc.id));
+        const aiMessage = message;
+        const aiMessageIndex = i;
+        i++;
+
+        // Look for corresponding ToolMessages immediately following
+        const toolMessages: any[] = [];
+        while (i < messages.length) {
+          const nextMessage = messages[i];
+
+          // Check if it's a ToolMessage for one of our tool_call_ids
+          // Use instanceof check for ToolMessage or check the class name
+          const isToolMessage =
+            nextMessage &&
+            (nextMessage instanceof ToolMessage ||
+             nextMessage.constructor?.name === 'ToolMessage') &&
+            nextMessage.tool_call_id &&
+            toolCallIds.has(nextMessage.tool_call_id);
+
+          if (isToolMessage) {
+            toolMessages.push(nextMessage);
+            toolCallIds.delete(nextMessage.tool_call_id);
+            i++;
+
+            // If all tool calls are responded to, we're done with this sequence
+            if (toolCallIds.size === 0) {
+              break;
+            }
+          } else {
+            // Not a matching ToolMessage, stop looking
+            break;
+          }
+        }
+
+        // Only include the AIMessage and ToolMessages if all tool calls were responded to
+        if (toolCallIds.size === 0) {
+          // All tool calls responded to, include the AIMessage and ToolMessages
+          filtered.push(aiMessage);
+          filtered.push(...toolMessages);
+        } else {
+          // Incomplete sequence - skip this AIMessage and its partial ToolMessages
+          // This prevents sending incomplete sequences to OpenAI API
+          log({
+            agentExecutor: 'filtering_incomplete_tool_sequence',
+            skippedAIMessage: aiMessageIndex,
+            missingToolCallIds: Array.from(toolCallIds),
+          });
+          // Continue processing from where we stopped (don't increment i, already done)
+        }
+      } else {
+        // Regular message (HumanMessage, AIMessage without tool_calls, etc.)
+        // Only include if we're not in the middle of an incomplete tool call sequence
+        filtered.push(message);
+        i++;
+      }
+    }
+
+    return filtered;
   }
 
   /**
@@ -214,7 +292,7 @@ export class AgentExecutor {
     const position = gameStateSnapshot.playerPosition
       ? `at (${gameStateSnapshot.playerPosition.x}, ${gameStateSnapshot.playerPosition.y}, ${gameStateSnapshot.playerPosition.z})`
       : 'position unknown';
-    
+
     const dayPhase = gameStateSnapshot.dayPhase || 'unknown';
     const playerCount = gameStateSnapshot.overworldPlayerCount || 0;
 
@@ -275,10 +353,10 @@ Be helpful and efficient. If you need more information, use query tools first be
       // Extract final AI response
       const lastMessage = finalState.messages[finalState.messages.length - 1];
       if (lastMessage && 'content' in lastMessage && lastMessage.content) {
-        const response = typeof lastMessage.content === 'string' 
-          ? lastMessage.content 
+        const response = typeof lastMessage.content === 'string'
+          ? lastMessage.content
           : String(lastMessage.content);
-        
+
         log({
           agentExecutor: 'process_message_complete',
           response,
