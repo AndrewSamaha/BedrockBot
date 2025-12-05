@@ -35,6 +35,9 @@ export function initializeChatPipeline({ username, admins }: InitializeChatPipel
       const packetData = packet as any;
 
       if (packetData.type.toLowerCase() === "chat") {
+        // Mark as PROCESSING before starting async operation to prevent duplicate processing
+        nextMessage.markProcessing(undefined);
+        
         log({ call: "chat_model_invoke", message: packetData.message });
         try {
           // Try agent first, fall back to simple chat

@@ -2,6 +2,19 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import type { GameState } from '../../../GameState.js';
 
+
+export const roundToNearestHalf = (num) => {
+  return Math.round(num * 2) / 2;
+}
+
+export const roundPosition = (position) => {
+  return {
+    x: roundToNearestHalf(position.x),
+    y: roundToNearestHalf(position.y),
+    z: roundToNearestHalf(position.z)
+  }
+}
+
 /**
  * Get the bot's current position
  */
@@ -17,9 +30,10 @@ export function createGetPlayerPositionTool(gameState: GameState) {
       }
 
       return JSON.stringify({
-        x: gameState.playerPosition.x,
-        y: gameState.playerPosition.y,
-        z: gameState.playerPosition.z,
+        /*x: roundToNearestHalf(gameState.playerPosition.x),
+        y: roundToNearestHalf(gameState.playerPosition.y),
+        z: roundToNearestHalf(gameState.playerPosition.z),*/
+        ...roundPosition(gameState.playerPosition),
         pitch: gameState.pitch,
         yaw: gameState.yaw,
         headYaw: gameState.headYaw,

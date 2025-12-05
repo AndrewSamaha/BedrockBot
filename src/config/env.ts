@@ -15,5 +15,9 @@ export const env = {
   LOG_EXCLUDE_PACKETS: process.env.LOG_EXCLUDE_PACKETS?.split(',') || [],
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   BED_LOCATION: process.env.BED_LOCATION,
-  WEBSOCKET_PORT: Number(process.env.WEBSOCKET_PORT || 8080)
+  WEBSOCKET_PORT: Number(process.env.WEBSOCKET_PORT || 8080),
+  LANGFUSE_SECRET_KEY: process.env.LANGFUSE_SECRET_KEY,
+  LANGFUSE_PUBLIC_KEY: process.env.LANGFUSE_PUBLIC_KEY,
+  LANGFUSE_BASE_URL: process.env.LANGFUSE_BASE_URL || 'https://cloud.langfuse.com',
+  LANGFUSE_ENABLED: process.env.LANGFUSE_ENABLED === 'true',
 };

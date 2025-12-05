@@ -1,6 +1,7 @@
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import type { GameState } from '../../../GameState.js';
+import { roundPosition } from './getPlayerPosition';
 
 /**
  * Get nearby players

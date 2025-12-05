@@ -8,6 +8,7 @@ import { updateGameStateSnapshot, addMessage, addMessages } from './graph.js';
 import { createAllTools } from './tools/index.js';
 import { log } from '../log.js';
 import { env } from '@/config/env.js';
+import { getLangfuseHandler } from './observability/langfuse.js';
 
 /**
  * Agent executor that runs LangGraph workflows with tool calling
@@ -19,6 +20,7 @@ export class AgentExecutor {
   private username: string;
   private tools: ReturnType<typeof createAllTools>;
   private chatModel: ChatOpenAI;
+  private langfuseHandler: ReturnType<typeof getLangfuseHandler>;
 
   constructor(gameState: GameState, client: Client, username: string) {
     this.gameState = gameState;
@@ -26,13 +28,26 @@ export class AgentExecutor {
     this.username = username;
     this.tools = createAllTools(client, gameState, username);
 
-    // Create LLM model with tools bound
-    this.chatModel = new ChatOpenAI({
+    // Get Langfuse callback handler for observability
+    this.langfuseHandler = getLangfuseHandler();
+    const callbacks = this.langfuseHandler ? [this.langfuseHandler] : undefined;
+
+    const openAIConfig = {
       modelName: 'gpt-5-mini',
       temperature: 1,
       maxTokens: 1000,
-    }).bindTools(this.tools);
-
+      callbacks, // Langfuse will automatically track LLM calls and tool executions
+    }
+    // Create LLM model with tools bound and Langfuse callbacks
+    this.chatModel = new ChatOpenAI(openAIConfig).bindTools(this.tools);
+    log({
+      agentExecutor: 'Initialized',
+      config: {
+        ...openAIConfig,
+        callbacks: callbacks ? callbacks.length : 0,
+        langfuseEnabled: !!this.langfuseHandler,
+      }
+    });
     // Create graph with node implementations
     this.graph = this.createGraphWithNodes();
   }
@@ -90,8 +105,21 @@ export class AgentExecutor {
           ...filteredMessages,
         ];
 
-        // Call LLM with tools
-        const response = await this.chatModel.invoke(messages);
+        // Pass callbacks to invoke explicitly (LangChain supports callbacks in invoke options)
+        const callbacks = this.langfuseHandler ? [this.langfuseHandler] : undefined;
+
+        log({
+          agentExecutor: 'llm_call_start',
+          messageCount: messages.length,
+          hasCallbacks: !!callbacks,
+          callbackHandlerType: this.langfuseHandler?.constructor?.name,
+          langfuseHandlerExists: !!this.langfuseHandler,
+        });
+
+        // Call LLM with tools and callbacks
+        // LangChain invoke accepts callbacks in the second parameter options object
+        const invokeOptions = callbacks ? { callbacks } : {};
+        const response = await this.chatModel.invoke(messages, invokeOptions);
 
         log({
           agentExecutor: 'llm_call',
