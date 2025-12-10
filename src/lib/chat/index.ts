@@ -37,7 +37,7 @@ export function initializeChatPipeline({ username, admins }: InitializeChatPipel
       if (packetData.type.toLowerCase() === "chat") {
         // Mark as PROCESSING before starting async operation to prevent duplicate processing
         nextMessage.markProcessing(undefined);
-        
+
         log({ call: "chat_model_invoke", message: packetData.message });
         try {
           // Try agent first, fall back to simple chat
@@ -48,7 +48,7 @@ export function initializeChatPipeline({ username, admins }: InitializeChatPipel
             client,
             username as string
           );
-          
+
           if (chatResponse) {
             say(client, username as string, chatResponse);
             nextMessage.markSuccess({ chatResponse });
@@ -74,41 +74,41 @@ export function initializeChatPipeline({ username, admins }: InitializeChatPipel
       const client = packet.getClient() as Client;
       const isAdmin = packet.xuid && admins.includes(packet.xuid);
 
-      let message = `${packet.source_name} ${isAdmin ? "an actual ADMIN" : "a regular user"} said: ${packet.message}`;
+      // let message = `${packet.source_name} ${isAdmin ? "an actual ADMIN" : "a regular user"} said: ${packet.message}`;
+      //
+      // if (nextMessage.result && nextMessage.result.chatResponse) {
+      //   message = `${nextMessage.result.chatResponse}`;
+      // }
 
-      if (nextMessage.result && nextMessage.result.chatResponse) {
-        message = `${nextMessage.result.chatResponse}`;
-      }
-
-      const outgoingItem = {
-        type: "chat",
-        needs_translation: false,
-        source_name: username,
-        xuid: "",
-        platform_chat_id: "",
-        filtered_message: "",
-        message
-      };
-
-      log({ outgoingItem });
-      client.queue("text", outgoingItem);
-
-      const command_text = "tp 2000 150 2000";
-
-      const command_request = {
-        command: command_text,
-        origin: {
-          type: 0,
-          uuid: (client as any).profile?.uuid || (client as any).uuid || "00000000-0000-0000-0000-000000000000",
-          request_id: `${Math.floor(Math.random() * 100_100)}`,
-          player_entity_id: gameState.runtimeEntityId
-        },
-        internal: false,
-        interval: 0
-      };
-
-      log({ command_request });
-      client.queue("command_request", command_request);
+      // const outgoingItem = {
+      //   type: "chat",
+      //   needs_translation: false,
+      //   source_name: username,
+      //   xuid: "",
+      //   platform_chat_id: "",
+      //   filtered_message: "",
+      //   message
+      // };
+      //
+      // log({ outgoingItem });
+      // client.queue("text", outgoingItem);
+      //
+      // const command_text = "tp 2000 150 2000";
+      //
+      // const command_request = {
+      //   command: command_text,
+      //   origin: {
+      //     type: 0,
+      //     uuid: (client as any).profile?.uuid || (client as any).uuid || "00000000-0000-0000-0000-000000000000",
+      //     request_id: `${Math.floor(Math.random() * 100_100)}`,
+      //     player_entity_id: gameState.runtimeEntityId
+      //   },
+      //   internal: false,
+      //   interval: 0
+      // };
+      //
+      // log({ command_request });
+      // client.queue("command_request", command_request);
 
       nextMessage.markSuccess(undefined);
     }
