@@ -23,6 +23,9 @@ importers:
       '@langfuse/langchain':
         specifier: ^4.4.9
         version: 4.4.9(@langchain/core@0.3.78(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@5.12.2(ws@8.18.3)(zod@4.1.12)))(@opentelemetry/api@1.9.0)
+      '@langfuse/otel':
+        specifier: ^4.4.9
+        version: 4.4.9(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/exporter-trace-otlp-http@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))
       '@opentelemetry/sdk-node':
         specifier: ^0.208.0
         version: 0.208.0(@opentelemetry/api@1.9.0)
@@ -873,6 +876,15 @@ packages:
     peerDependencies:
       '@langchain/core': '>=0.3.0'
       '@opentelemetry/api': ^1.9.0
+
+  '@langfuse/otel@4.4.9':
+    resolution: {integrity: sha512-T9tSucDC3cvdeUB8fTGXm6ZZcC4kOEreJuM/C66nHQ26+DWtx2AN75JWuadc2E+VU/K+BjTb5XAkBceWYtvXjw==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.9.0
+      '@opentelemetry/core': ^2.0.1
+      '@opentelemetry/exporter-trace-otlp-http': '>=0.202.0 <1.0.0'
+      '@opentelemetry/sdk-trace-base': ^2.0.1
 
   '@langfuse/tracing@4.4.9':
     resolution: {integrity: sha512-if+G/v9NsyTKj40KKX96bRSdMXwyDbVL4GJQvmwQ9SxvGYF+d99pGFB7L6QOeCd1KBHMdmDe733ncmvCnSHJ9w==}
@@ -4093,6 +4105,14 @@ snapshots:
       '@langfuse/tracing': 4.4.9(@opentelemetry/api@1.9.0)
       '@opentelemetry/api': 1.9.0
 
+  '@langfuse/otel@4.4.9(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/exporter-trace-otlp-http@0.208.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@langfuse/core': 4.4.9(@opentelemetry/api@1.9.0)
+      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/core': 2.2.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/exporter-trace-otlp-http': 0.208.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-trace-base': 2.2.0(@opentelemetry/api@1.9.0)
+
   '@langfuse/tracing@4.4.9(@opentelemetry/api@1.9.0)':
     dependencies:
       '@langfuse/core': 4.4.9(@opentelemetry/api@1.9.0)
@@ -5686,7 +5706,7 @@ snapshots:
       isstream: 0.1.2
       jsonwebtoken: 9.0.2
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.12.2)
+      retry-axios: 2.6.0(axios@1.12.2(debug@4.4.3))
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -6577,7 +6597,7 @@ snapshots:
 
   ret@0.1.15: {}
 
-  retry-axios@2.6.0(axios@1.12.2):
+  retry-axios@2.6.0(axios@1.12.2(debug@4.4.3)):
     dependencies:
       axios: 1.12.2(debug@4.4.3)
 

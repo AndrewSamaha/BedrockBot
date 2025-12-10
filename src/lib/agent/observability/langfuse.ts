@@ -1,16 +1,26 @@
 import { CallbackHandler } from '@langfuse/langchain';
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import { LangfuseSpanProcessor } from "@langfuse/otel";
+
 import { log } from '../../log.js';
 
+// Initialize open telemetry node-sdk, this needs to happen before
+// initializing a langfuse callback handler
+const sdk = new NodeSDK({
+  spanProcessors: [new LangfuseSpanProcessor()],
+});
+
+sdk.start();
 /**
  * Langfuse observability integration for agent tracing
- * 
+ *
  * Provides automatic tracking of:
  * - LLM calls (inputs, outputs, token usage, latency)
  * - Tool calls and results
  * - Errors and exceptions
- * 
+ *
  * Can be disabled via LANGFUSE_ENABLED=false
- * 
+ *
  * Note: CallbackHandler reads credentials directly from process.env:
  * - LANGFUSE_SECRET_KEY (required)
  * - LANGFUSE_PUBLIC_KEY (required)
@@ -20,7 +30,7 @@ let langfuseHandler: CallbackHandler | null = null;
 
 /**
  * Initialize Langfuse callback handler if enabled
- * 
+ *
  * Reads configuration directly from process.env:
  * - LANGFUSE_ENABLED: Set to 'true' to enable
  * - LANGFUSE_SECRET_KEY: Secret key from Langfuse
