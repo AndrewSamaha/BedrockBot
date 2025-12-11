@@ -6,8 +6,11 @@ import { log } from '../../log.js';
 
 // Initialize open telemetry node-sdk, this needs to happen before
 // initializing a langfuse callback handler
+//
+export const langfuseSpanProcessor = new LangfuseSpanProcessor();
+
 const sdk = new NodeSDK({
-  spanProcessors: [new LangfuseSpanProcessor()],
+  spanProcessors: [langfuseSpanProcessor],
 });
 
 sdk.start();
@@ -68,9 +71,11 @@ export function initializeLangfuse(): CallbackHandler | null {
   try {
     langfuseHandler = new CallbackHandler({
       // Optional metadata can be added here
-      // userId: username,
+      userId: process.env.BEDROCK_USERNAME,
       // sessionId: sessionId,
-      // tags: ['agent', 'bedrock-bot'],
+      tags: [
+        `host:${process.env.BEDROCK_HOST}:${process.env.BEDROCK_PORT}`
+      ],
     });
 
     log({
@@ -111,4 +116,16 @@ export function isLangfuseEnabled(): boolean {
     !!process.env.LANGFUSE_SECRET_KEY &&
     !!process.env.LANGFUSE_PUBLIC_KEY
   );
+}
+
+/**
+ * Flush pending Langfuse traces to ensure they are sent
+ * Should be called after completing agent operations to ensure
+ * the latest traces are flushed before the next invocation
+ */
+export async function flushLangfuse(): Promise<void> {
+  await langfuseSpanProcessor.forceFlush();
+  log({
+    langfuse: 'forceFlush'
+  });
 }

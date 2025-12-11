@@ -8,7 +8,7 @@ import { updateGameStateSnapshot, addMessage, addMessages } from './graph.js';
 import { createAllTools } from './tools/index.js';
 import { log } from '../log.js';
 import { env } from '@/config/env.js';
-import { getLangfuseHandler } from './observability/langfuse.js';
+import { getLangfuseHandler, flushLangfuse } from './observability/langfuse.js';
 
 /**
  * Agent executor that runs LangGraph workflows with tool calling
@@ -96,6 +96,7 @@ export class AgentExecutor {
       try {
         // Filter messages to ensure tool_calls are followed by ToolMessages
         // OpenAI requires that every AIMessage with tool_calls has corresponding ToolMessages
+        const preFilterMessageCount = state.messages.length;
         const filteredMessages = this.filterMessagesForLLM(state.messages);
 
         // Prepare messages for LLM (include system prompt with game state context)
@@ -110,6 +111,7 @@ export class AgentExecutor {
 
         log({
           agentExecutor: 'llm_call_start',
+          preFilterMessageCount,
           messageCount: messages.length,
           hasCallbacks: !!callbacks,
           callbackHandlerType: this.langfuseHandler?.constructor?.name,
@@ -380,8 +382,10 @@ Be helpful and efficient. If you need more information, use query tools first be
 
       // Extract final AI response
       const lastMessage = finalState.messages[finalState.messages.length - 1];
+      let response: string;
+      
       if (lastMessage && 'content' in lastMessage && lastMessage.content) {
-        const response = typeof lastMessage.content === 'string'
+        response = typeof lastMessage.content === 'string'
           ? lastMessage.content
           : String(lastMessage.content);
 
@@ -390,22 +394,27 @@ Be helpful and efficient. If you need more information, use query tools first be
           response,
           totalMessages: finalState.messages.length,
         });
-
-        return response;
+      } else if (lastMessage && 'tool_calls' in lastMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+        // If no content, check if there were tool calls
+        response = `I executed ${lastMessage.tool_calls.length} action(s). Check the results!`;
+      } else {
+        response = "I'm processing your request...";
       }
 
-      // If no content, check if there were tool calls
-      if (lastMessage && 'tool_calls' in lastMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
-        return `I executed ${lastMessage.tool_calls.length} action(s). Check the results!`;
-      }
+      // Flush Langfuse traces to ensure they are sent before returning
+      await flushLangfuse();
 
-      return "I'm processing your request...";
+      return response;
     } catch (error) {
       log({
         agentExecutor: 'process_message_error',
         error: (error as Error).message,
         stack: (error as Error).stack,
       });
+      
+      // Flush traces even on error to capture error traces
+      await flushLangfuse();
+      
       return `Sorry, I encountered an error: ${(error as Error).message}`;
     }
   }
