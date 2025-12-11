@@ -13,7 +13,7 @@ type InitializeChatPipelineParams = {
   admins: string[];
 };
 
-const POLL_INTERVAL_MS = 10_000;
+const POLL_INTERVAL_MS = 1_000;
 
 export function initializeChatPipeline({ username, admins }: InitializeChatPipelineParams): NodeJS.Timeout {
 

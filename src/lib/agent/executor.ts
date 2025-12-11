@@ -9,6 +9,7 @@ import { createAllTools } from './tools/index.js';
 import { log } from '../log.js';
 import { env } from '@/config/env.js';
 import { getLangfuseHandler, flushLangfuse } from './observability/langfuse.js';
+import { randomUUID } from 'crypto';
 
 /**
  * Agent executor that runs LangGraph workflows with tool calling
@@ -59,7 +60,81 @@ export class AgentExecutor {
     const graph = new StateGraph<AgentState>({
       channels: {
         messages: {
-          reducer: (x: any[], y: any[]) => [...x, ...y],
+          reducer: (x: any[], y: any[]) => {
+            // Deduplicate messages to prevent duplicates when update_state returns full state
+            // We deduplicate by:
+            // 1. HumanMessages: by ID (UUID we set)
+            // 2. AIMessages: by content + tool_calls signature
+            // 3. ToolMessages: by tool_call_id + content
+            // 4. SystemMessages: by content
+            
+            // Create signatures for existing messages to detect duplicates
+            const existingSignatures = new Set<string>();
+            
+            // Build signatures for existing messages
+            for (const msg of x) {
+              const isHumanMessage = msg instanceof HumanMessage || msg.constructor?.name === 'HumanMessage';
+              const isAIMessage = msg instanceof AIMessage || msg.constructor?.name === 'AIMessage';
+              const isToolMessage = msg instanceof ToolMessage || msg.constructor?.name === 'ToolMessage';
+              const isSystemMessage = msg instanceof SystemMessage || msg.constructor?.name === 'SystemMessage';
+              
+              let signature: string;
+              if (isHumanMessage && msg.id && typeof msg.id === 'string') {
+                // HumanMessage: use UUID
+                signature = `human:${msg.id}`;
+              } else if (isAIMessage) {
+                // AIMessage: content + tool_calls signature
+                const toolCallsSig = msg.tool_calls
+                  ? JSON.stringify(msg.tool_calls.map((tc: any) => ({ id: tc.id, name: tc.name })).sort((a: any, b: any) => a.id.localeCompare(b.id)))
+                  : 'no-tool-calls';
+                signature = `ai:${msg.content}:${toolCallsSig}`;
+              } else if (isToolMessage) {
+                // ToolMessage: tool_call_id + content
+                signature = `tool:${msg.tool_call_id}:${msg.content}`;
+              } else if (isSystemMessage) {
+                // SystemMessage: content
+                signature = `system:${msg.content}`;
+              } else {
+                // Unknown type: use content as fallback
+                signature = `unknown:${JSON.stringify(msg.content)}`;
+              }
+              
+              existingSignatures.add(signature);
+            }
+            
+            // Filter new messages, skipping duplicates
+            const newMessages = y.filter((msg) => {
+              const isHumanMessage = msg instanceof HumanMessage || msg.constructor?.name === 'HumanMessage';
+              const isAIMessage = msg instanceof AIMessage || msg.constructor?.name === 'AIMessage';
+              const isToolMessage = msg instanceof ToolMessage || msg.constructor?.name === 'ToolMessage';
+              const isSystemMessage = msg instanceof SystemMessage || msg.constructor?.name === 'SystemMessage';
+              
+              let signature: string;
+              if (isHumanMessage && msg.id && typeof msg.id === 'string') {
+                signature = `human:${msg.id}`;
+              } else if (isAIMessage) {
+                const toolCallsSig = msg.tool_calls
+                  ? JSON.stringify(msg.tool_calls.map((tc: any) => ({ id: tc.id, name: tc.name })).sort((a: any, b: any) => a.id.localeCompare(b.id)))
+                  : 'no-tool-calls';
+                signature = `ai:${msg.content}:${toolCallsSig}`;
+              } else if (isToolMessage) {
+                signature = `tool:${msg.tool_call_id}:${msg.content}`;
+              } else if (isSystemMessage) {
+                signature = `system:${msg.content}`;
+              } else {
+                signature = `unknown:${JSON.stringify(msg.content)}`;
+              }
+              
+              if (existingSignatures.has(signature)) {
+                return false; // Skip duplicate
+              }
+              
+              existingSignatures.add(signature);
+              return true;
+            });
+            
+            return [...x, ...newMessages];
+          },
           default: () => [],
         },
         gameState: {
@@ -357,7 +432,12 @@ Be helpful and efficient. If you need more information, use query tools first be
     try {
       // Create initial state
       const initialState = {
-        messages: [new HumanMessage(`${speakerName}: ${userMessage}`)],
+        messages: [
+          new HumanMessage({
+            content: `${speakerName}: ${userMessage}`,
+            id: randomUUID(),
+          }),
+        ],
         gameState: updateGameStateSnapshot(
           {
             messages: [],
