@@ -70,17 +70,17 @@ export class AgentExecutor {
             // 2. AIMessages: by content + tool_calls signature
             // 3. ToolMessages: by tool_call_id + content
             // 4. SystemMessages: by content
-            
+
             // Create signatures for existing messages to detect duplicates
             const existingSignatures = new Set<string>();
-            
+
             // Build signatures for existing messages
             for (const msg of x) {
               const isHumanMessage = msg instanceof HumanMessage || msg.constructor?.name === 'HumanMessage';
               const isAIMessage = msg instanceof AIMessage || msg.constructor?.name === 'AIMessage';
               const isToolMessage = msg instanceof ToolMessage || msg.constructor?.name === 'ToolMessage';
               const isSystemMessage = msg instanceof SystemMessage || msg.constructor?.name === 'SystemMessage';
-              
+
               let signature: string;
               if (isHumanMessage && msg.id && typeof msg.id === 'string') {
                 // HumanMessage: use UUID
@@ -101,17 +101,17 @@ export class AgentExecutor {
                 // Unknown type: use content as fallback
                 signature = `unknown:${JSON.stringify(msg.content)}`;
               }
-              
+
               existingSignatures.add(signature);
             }
-            
+
             // Filter new messages, skipping duplicates
             const newMessages = y.filter((msg) => {
               const isHumanMessage = msg instanceof HumanMessage || msg.constructor?.name === 'HumanMessage';
               const isAIMessage = msg instanceof AIMessage || msg.constructor?.name === 'AIMessage';
               const isToolMessage = msg instanceof ToolMessage || msg.constructor?.name === 'ToolMessage';
               const isSystemMessage = msg instanceof SystemMessage || msg.constructor?.name === 'SystemMessage';
-              
+
               let signature: string;
               if (isHumanMessage && msg.id && typeof msg.id === 'string') {
                 signature = `human:${msg.id}`;
@@ -127,15 +127,15 @@ export class AgentExecutor {
               } else {
                 signature = `unknown:${JSON.stringify(msg.content)}`;
               }
-              
+
               if (existingSignatures.has(signature)) {
                 return false; // Skip duplicate
               }
-              
+
               existingSignatures.add(signature);
               return true;
             });
-            
+
             return [...x, ...newMessages];
           },
           default: () => [],
@@ -344,8 +344,9 @@ Be helpful and efficient. If you need more information, use query tools first be
       "agent-process-message",
       async (span) => {
         try {
+          const userMessageId = randomUUID();
           span.update({
-            input: { userMessage, speakerName },
+            input: { userMessage, speakerName, userMessageId },
           });
 
           // Create initial state
@@ -353,7 +354,7 @@ Be helpful and efficient. If you need more information, use query tools first be
             messages: [
               new HumanMessage({
                 content: `${speakerName}: ${userMessage}`,
-                id: randomUUID(),
+                id: userMessageId,
               }),
             ],
             gameState: updateGameStateSnapshot(
@@ -381,7 +382,7 @@ Be helpful and efficient. If you need more information, use query tools first be
           // Extract final AI response
           const lastMessage = finalState.messages[finalState.messages.length - 1];
           let response: string;
-          
+
           if (lastMessage && 'content' in lastMessage && lastMessage.content) {
             response = typeof lastMessage.content === 'string'
               ? lastMessage.content
@@ -411,15 +412,15 @@ Be helpful and efficient. If you need more information, use query tools first be
             error: (error as Error).message,
             stack: (error as Error).stack,
           });
-          
+
           span.update({
             level: "ERROR",
             statusMessage: (error as Error).message,
           });
-          
+
           // Flush traces even on error to capture error traces
           await flushLangfuse();
-          
+
           return `Sorry, I encountered an error: ${(error as Error).message}`;
         }
       }
