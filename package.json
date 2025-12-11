@@ -49,6 +49,7 @@
     "@langchain/openai": "^0.6.14",
     "@langfuse/langchain": "^4.4.9",
     "@langfuse/otel": "^4.4.9",
+    "@langfuse/tracing": "^4.4.9",
     "@opentelemetry/sdk-node": "^0.208.0",
     "bedrock-protocol": "^3.49.0",
     "dotenv": "^17.2.3",

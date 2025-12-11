@@ -1,6 +1,7 @@
 import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
 import { ChatOpenAI } from '@langchain/openai';
 import { StateGraph, END, START } from '@langchain/langgraph';
+import { startActiveObservation } from "@langfuse/tracing";
 import type { Client } from 'bedrock-protocol';
 import type { GameState } from '../GameState.js';
 import type { AgentState } from './types.js';
@@ -10,6 +11,8 @@ import { log } from '../log.js';
 import { env } from '@/config/env.js';
 import { getLangfuseHandler, flushLangfuse } from './observability/langfuse.js';
 import { randomUUID } from 'crypto';
+import { createUpdateStateNode, createLlmCallNode, createExecuteToolsNode } from './graph_nodes/index.js';
+import type { UpdateStateDependencies, LlmCallDependencies, ExecuteToolsDependencies } from './graph_nodes/index.js';
 
 /**
  * Agent executor that runs LangGraph workflows with tool calling
@@ -161,130 +164,37 @@ export class AgentExecutor {
       },
     });
 
+    // Prepare dependencies for each node
+    const updateStateDeps: UpdateStateDependencies = {
+      gameState: this.gameState,
+    };
+
+    const llmCallDeps: LlmCallDependencies = {
+      chatModel: this.chatModel,
+      langfuseHandler: this.langfuseHandler,
+      filterMessagesForLLM: this.filterMessagesForLLM.bind(this),
+      createSystemPrompt: this.createSystemPrompt.bind(this),
+      username: this.username,
+    };
+
+    const executeToolsDeps: ExecuteToolsDependencies = {
+      tools: this.tools,
+    };
+
+    // Create wrapped node functions with Langfuse tracing
+    // Each factory function returns a node function that matches LangGraph's expected signature
+    const updateStateNode = createUpdateStateNode(updateStateDeps);
+    const llmCallNode = createLlmCallNode(llmCallDeps);
+    const executeToolsNode = createExecuteToolsNode(executeToolsDeps);
+
     // Update state node - refreshes GameState snapshot
-    graph.addNode('update_state', async (state: AgentState) => {
-      return updateGameStateSnapshot(state, this.gameState);
-    });
+    graph.addNode('update_state', updateStateNode);
 
     // LLM call node - calls LLM with tools
-    graph.addNode('llm_call', async (state: AgentState) => {
-      try {
-        // Filter messages to ensure tool_calls are followed by ToolMessages
-        // OpenAI requires that every AIMessage with tool_calls has corresponding ToolMessages
-        const preFilterMessageCount = state.messages.length;
-        const filteredMessages = this.filterMessagesForLLM(state.messages);
-
-        // Prepare messages for LLM (include system prompt with game state context)
-        const systemPrompt = this.createSystemPrompt(state.gameState);
-        const messages = [
-          new SystemMessage(systemPrompt),
-          ...filteredMessages,
-        ];
-
-        // Pass callbacks to invoke explicitly (LangChain supports callbacks in invoke options)
-        const callbacks = this.langfuseHandler ? [this.langfuseHandler] : undefined;
-
-        log({
-          agentExecutor: 'llm_call_start',
-          preFilterMessageCount,
-          messageCount: messages.length,
-          hasCallbacks: !!callbacks,
-          callbackHandlerType: this.langfuseHandler?.constructor?.name,
-          langfuseHandlerExists: !!this.langfuseHandler,
-        });
-
-        // Call LLM with tools and callbacks
-        // LangChain invoke accepts callbacks in the second parameter options object
-        const invokeOptions = callbacks ? { callbacks } : {};
-        const response = await this.chatModel.invoke(messages, invokeOptions);
-
-        log({
-          agentExecutor: 'llm_call',
-          responseContent: response.content,
-          toolCalls: response.tool_calls?.length || 0,
-        });
-
-        // Add AI response to state
-        return addMessage(state, response);
-      } catch (error) {
-        log({
-          agentExecutor: 'llm_call_error',
-          error: (error as Error).message,
-          stack: (error as Error).stack,
-        });
-        // Return state with error message
-        return addMessage(
-          state,
-          new AIMessage(`I encountered an error: ${(error as Error).message}`)
-        );
-      }
-    });
+    graph.addNode('llm_call', llmCallNode);
 
     // Execute tools node - executes tool calls from LLM
-    graph.addNode('execute_tools', async (state: AgentState) => {
-      const lastMessage = state.messages[state.messages.length - 1];
-
-      // Check if last message has tool calls
-      if (!lastMessage || !('tool_calls' in lastMessage) || !lastMessage.tool_calls || lastMessage.tool_calls.length === 0) {
-        // No tool calls, we're done
-        return state;
-      }
-
-      // Execute each tool call
-      const toolMessages: ToolMessage[] = [];
-      for (const toolCall of lastMessage.tool_calls || []) {
-        try {
-          const tool = this.tools.find((t) => t.name === toolCall.name);
-          if (!tool) {
-            toolMessages.push(
-              new ToolMessage({
-                content: JSON.stringify({ error: `Tool ${toolCall.name} not found` }),
-                tool_call_id: toolCall.id,
-              })
-            );
-            continue;
-          }
-
-          log({
-            agentExecutor: 'tool_call',
-            toolName: toolCall.name,
-            args: toolCall.args,
-          });
-
-          // Execute tool
-          const result = await tool.invoke(toolCall.args);
-          toolMessages.push(
-            new ToolMessage({
-              content: result,
-              tool_call_id: toolCall.id,
-            })
-          );
-
-          log({
-            agentExecutor: 'tool_result',
-            toolName: toolCall.name,
-            result: result.substring(0, 200), // Log first 200 chars
-          });
-        } catch (error) {
-          log({
-            agentExecutor: 'tool_error',
-            toolName: toolCall.name,
-            error: (error as Error).message,
-          });
-          toolMessages.push(
-            new ToolMessage({
-              content: JSON.stringify({
-                error: (error as Error).message,
-              }),
-              tool_call_id: toolCall.id,
-            })
-          );
-        }
-      }
-
-      // Add tool result messages to state
-      return addMessages(state, toolMessages);
-    });
+    graph.addNode('execute_tools', executeToolsNode);
 
     // Set up graph edges
     graph.addEdge(START, 'update_state');
@@ -427,75 +337,92 @@ Be helpful and efficient. If you need more information, use query tools first be
 
   /**
    * Process a user message through the agent
+   * Wrapped with startActiveObservation for Langfuse tracing
    */
   async processMessage(userMessage: string, speakerName: string): Promise<string> {
-    try {
-      // Create initial state
-      const initialState = {
-        messages: [
-          new HumanMessage({
-            content: `${speakerName}: ${userMessage}`,
-            id: randomUUID(),
-          }),
-        ],
-        gameState: updateGameStateSnapshot(
-          {
-            messages: [],
-            gameState: { spawned: false, timestamp: Date.now() },
+    return await startActiveObservation(
+      "agent-process-message",
+      async (span) => {
+        try {
+          span.update({
+            input: { userMessage, speakerName },
+          });
+
+          // Create initial state
+          const initialState = {
+            messages: [
+              new HumanMessage({
+                content: `${speakerName}: ${userMessage}`,
+                id: randomUUID(),
+              }),
+            ],
+            gameState: updateGameStateSnapshot(
+              {
+                messages: [],
+                gameState: { spawned: false, timestamp: Date.now() },
+                pendingRequests: new Map(),
+                lastUpdate: Date.now(),
+              },
+              this.gameState
+            ).gameState,
             pendingRequests: new Map(),
             lastUpdate: Date.now(),
-          },
-          this.gameState
-        ).gameState,
-        pendingRequests: new Map(),
-        lastUpdate: Date.now(),
-      };
+          };
 
-      log({
-        agentExecutor: 'process_message_start',
-        speakerName,
-        message: userMessage,
-      });
+          log({
+            agentExecutor: 'process_message_start',
+            speakerName,
+            message: userMessage,
+          });
 
-      // Run the graph - it will automatically loop until no more tool calls
-      const finalState = await this.graph.invoke(initialState);
+          // Run the graph - it will automatically loop until no more tool calls
+          const finalState = await this.graph.invoke(initialState);
 
-      // Extract final AI response
-      const lastMessage = finalState.messages[finalState.messages.length - 1];
-      let response: string;
-      
-      if (lastMessage && 'content' in lastMessage && lastMessage.content) {
-        response = typeof lastMessage.content === 'string'
-          ? lastMessage.content
-          : String(lastMessage.content);
+          // Extract final AI response
+          const lastMessage = finalState.messages[finalState.messages.length - 1];
+          let response: string;
+          
+          if (lastMessage && 'content' in lastMessage && lastMessage.content) {
+            response = typeof lastMessage.content === 'string'
+              ? lastMessage.content
+              : String(lastMessage.content);
 
-        log({
-          agentExecutor: 'process_message_complete',
-          response,
-          totalMessages: finalState.messages.length,
-        });
-      } else if (lastMessage && 'tool_calls' in lastMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
-        // If no content, check if there were tool calls
-        response = `I executed ${lastMessage.tool_calls.length} action(s). Check the results!`;
-      } else {
-        response = "I'm processing your request...";
+            log({
+              agentExecutor: 'process_message_complete',
+              response,
+              totalMessages: finalState.messages.length,
+            });
+          } else if (lastMessage && 'tool_calls' in lastMessage && lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+            // If no content, check if there were tool calls
+            response = `I executed ${lastMessage.tool_calls.length} action(s). Check the results!`;
+          } else {
+            response = "I'm processing your request...";
+          }
+
+          span.update({ output: response });
+
+          // Flush Langfuse traces to ensure they are sent before returning
+          await flushLangfuse();
+
+          return response;
+        } catch (error) {
+          log({
+            agentExecutor: 'process_message_error',
+            error: (error as Error).message,
+            stack: (error as Error).stack,
+          });
+          
+          span.update({
+            level: "ERROR",
+            statusMessage: (error as Error).message,
+          });
+          
+          // Flush traces even on error to capture error traces
+          await flushLangfuse();
+          
+          return `Sorry, I encountered an error: ${(error as Error).message}`;
+        }
       }
-
-      // Flush Langfuse traces to ensure they are sent before returning
-      await flushLangfuse();
-
-      return response;
-    } catch (error) {
-      log({
-        agentExecutor: 'process_message_error',
-        error: (error as Error).message,
-        stack: (error as Error).stack,
-      });
-      
-      // Flush traces even on error to capture error traces
-      await flushLangfuse();
-      
-      return `Sorry, I encountered an error: ${(error as Error).message}`;
-    }
+    );
   }
 }
