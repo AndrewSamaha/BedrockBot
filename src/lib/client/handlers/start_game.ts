@@ -1,5 +1,7 @@
 import { gameState } from '@/lib/GameState';
 import { log } from '@/lib/log';
+import { env } from '@/config/env.js';
+import { initializeAgentExecutor } from '@/lib/agent/chatIntegration.js';
 
 function sendCommand(client: any, command: string) {
   client.queue('command_request', {
@@ -20,6 +22,10 @@ const startGame = {
     log({ packet });
     log({ server_authoritative_movement: packet.server_authoritative_movement })
     gameState.startGame(client, packet);
+
+    // Initialize agent executor after game starts
+    initializeAgentExecutor(gameState, client, env.BEDROCK_USERNAME);
+
     log({ sending: 'set_local_player_as_initialized', runtime_entity_id: packet.runtime_entity_id });
 
     // The following three packets are essential for enabling movement

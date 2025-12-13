@@ -9,3 +9,11 @@ alwaysApply: true
 - **Data samples**: Use `docs/log_samples/` for canonical examples of packet flows and player interactions.
 - **Logging**: Bot runs emit timestamped JSON logs in `logs/`. Review them to understand behavior and diagnose issues.
 - **Key dependencies**: Code integrates `bedrock-protocol`, Prismarine libraries, and LangChain-based integrations. Respect their abstractions instead of reimplementing core logic.
+
+## Agent System Architecture
+
+- **EventEmitter Pattern**: GameState extends EventEmitter and emits `'subchunk-received'` and `'chunk-received'` events. Packet handlers call `gameState.addReceivedSubchunk()` and `gameState.addReceivedChunk()` instead of directly mutating arrays.
+- **RequestManager**: Coordinates async world state requests via EventEmitter subscriptions. Initialized in GameState constructor, accessible via `gameState.worldStateRequestManager`.
+- **State Snapshots**: Agent reads from GameState snapshots (via `createGameStateSnapshot()`) rather than directly from GameState. Snapshots provide point-in-time views while EventEmitter handles async operations.
+- **Tool Organization**: Tools organized in `src/lib/agent/tools/` with `worldState/` and `actions/` subdirectories. Each tool factory in its own file. Use `createAllTools()` to get all tools.
+- **Non-blocking**: Bot layer never waits on LLM decisions. Tools use async/await with timeouts. Background operations continue independently.

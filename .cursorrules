@@ -62,7 +62,53 @@ When adding new fields to the snapshot:
 3. Open: `http://localhost:3000`
 4. Verify WebSocket connection and 3D rendering
 
+## Agent System
+
+### Architecture
+- **Location**: `src/lib/agent/`
+- **Framework**: LangGraph for agent orchestration
+- **Pattern**: EventEmitter-based async coordination + State snapshots
+- **Key Components**:
+  - `WorldStateRequestManager` - Coordinates async world state requests via EventEmitter
+  - `AgentState` - LangGraph state with messages, gameState snapshot, pending requests
+  - Tools - Organized in `src/lib/agent/tools/` (worldState/ and actions/ subdirectories)
+
+### EventEmitter Pattern
+- **GameState extends EventEmitter**: Emits `'subchunk-received'` and `'chunk-received'` events
+- **Packet handlers call methods**: Use `gameState.addReceivedSubchunk()` and `gameState.addReceivedChunk()` instead of direct mutation
+- **RequestManager subscribes**: Automatically fulfills pending requests when events fire
+- **Decoupled design**: Handlers don't know about RequestManager, RequestManager doesn't know about handlers
+
+### State Snapshots
+- **Purpose**: Provide point-in-time, read-only views of GameState for agent
+- **Location**: `src/lib/agent/snapshot.ts` - `createGameStateSnapshot()` function
+- **Usage**: Agent reads from snapshots, not directly from GameState
+- **Why needed**: Complements EventEmitter pattern - snapshots for reading current state, EventEmitter for async requests
+
+### Tool Organization
+- **Structure**: Each tool factory in its own file
+  - `tools/worldState/` - Query tools (getPlayerPosition, getNearbyPlayers, getSubchunkData, etc.)
+  - `tools/actions/` - Action tools (move, teleport, look, fill, say)
+- **Factory pattern**: All tools created via `create*Tool()` functions
+- **Entry point**: `tools/index.ts` exports `createAllTools()` function
+- **Testing**: Each tool has corresponding `.test.ts` file
+
+### Key Design Decisions
+- **EventEmitter over direct calls**: Keeps handlers decoupled from RequestManager
+- **State snapshots**: Agent reads snapshots while bot layer updates GameState independently
+- **RequestManager in GameState**: Initialized in GameState constructor, accessible via `gameState.worldStateRequestManager`
+- **Tool separation**: Each tool in separate file for maintainability
+- **Zod schemas**: All tool parameters use Zod for validation and LLM understanding
+
+### When Adding New Tools
+1. Create tool file in appropriate subdirectory (`worldState/` or `actions/`)
+2. Export from subdirectory `index.ts`
+3. Add to `createAllTools()` in main `tools/index.ts`
+4. Create corresponding `.test.ts` file
+5. Follow existing patterns: Zod schema, JSON.stringify responses, error handling
+
 ## Documentation
 - `docs/visualization-implementation.md` - Architecture and technical details
 - `docs/websocket-visualization.md` - Usage guide
 - `docs/websocket-troubleshooting.md` - Common issues
+- `docs/roadmap/agents.md` - Agent architecture and implementation roadmap

@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import { type Client } from 'bedrock-protocol';
 import PrismarineRegistryLoader, { type RegistryBedrock } from "prismarine-registry";
 
@@ -12,6 +13,7 @@ import { botConfig, type BotConfig } from '@/config/bot'
 import { env } from '@/config/env';
 import { World, type World } from './World';
 import { subchunkRequest } from './serverCommands/index';
+import { WorldStateRequestManager } from './agent/WorldStateRequestManager.js';
 
 const TIC_INTERVAL = 50;
 const MINECRAFT_DAY_LENGTH_IN_TICS = 24_000;
@@ -29,7 +31,7 @@ const getDayPhase: DAY_PHASE = (gameTime: number) => {
   return 'sunrise';
 }
 
-export class GameState {
+export class GameState extends EventEmitter {
   private static instance: GameState | null = null;
   botConfig: BotConfig;
   playerPosition: Vec3 | undefined;
@@ -50,6 +52,7 @@ export class GameState {
   gameRules: unknown | undefined;
   attributes: unknown | undefined;
   conversationManager: undefined | ConversationManager;
+  agentExecutor: undefined | any; // AgentExecutor - avoid circular import
   sleeping: boolean | undefined;
   reconnectTimeout: NodeJS.Timeout | null = null;
   isReconnecting: boolean;
@@ -63,6 +66,7 @@ export class GameState {
   registry: RegistryBedrock | undefined;
   receivedSubChunks: number[][];
   playerList: unknown[];
+  worldStateRequestManager: WorldStateRequestManager | undefined;
 
   private ticInterval: NodeJS.Timeout | null = null;
   private lastBroadcastTime: number = 0;
@@ -71,6 +75,7 @@ export class GameState {
   private readonly HEARTBEAT_INTERVAL_MS = 5000; // Run heartbeat every 5 seconds
 
   private constructor() {
+    super(); // Initialize EventEmitter
     this.world = new World();
     this.spawned = false;
     this.lastTic = 0;
@@ -82,6 +87,8 @@ export class GameState {
     this.botConfig = botConfig;
     this.receivedSubChunks = [];
     this.playerList = [];
+    // Initialize RequestManager with EventEmitter subscriptions
+    this.worldStateRequestManager = new WorldStateRequestManager(this);
   }
 
   static getInstance(): GameState {
@@ -441,6 +448,41 @@ export class GameState {
     }
 
     this.isReconnecting = false;
+  }
+
+  /**
+   * Add a received subchunk and emit event for RequestManager.
+   * This method should be called by packet handlers instead of directly mutating receivedSubChunks.
+   * @param x Chunk X coordinate
+   * @param y Subchunk Y index
+   * @param z Chunk Z coordinate
+   */
+  addReceivedSubchunk(x: number, y: number, z: number): void {
+    // Check if already in array to avoid duplicates
+    const alreadyReceived = this.receivedSubChunks.some(
+      ([cx, cy, cz]) => cx === x && cy === y && cz === z
+    );
+
+    if (!alreadyReceived) {
+      this.receivedSubChunks.push([x, y, z]);
+    }
+
+    // Emit event for RequestManager and other subscribers
+    this.emit('subchunk-received', { x, y, z });
+    // log({ gameState: 'subchunk-added', coords: { x, y, z }, alreadyReceived });
+  }
+
+  /**
+   * Add a received chunk and emit event for RequestManager.
+   * This method should be called by packet handlers after setting chunk data in world.
+   * @param x Chunk X coordinate
+   * @param z Chunk Z coordinate
+   */
+  addReceivedChunk(x: number, z: number): void {
+    // Emit event for RequestManager and other subscribers
+    // Note: Chunk data is already stored in this.world by the handler
+    this.emit('chunk-received', { x, z });
+    //log({ gameState: 'chunk-added', coords: { x, z } });
   }
 }
 

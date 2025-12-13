@@ -24,6 +24,8 @@ const handler = {
     const cc = new ChunkColumn({ x: packet.x, z: packet.z });
     await cc.networkDecodeNoCache(packet.payload, packet.sub_chunk_count);
     gameState.world.setChunk(packet.x, packet.z, cc);
+    // Use GameState method that emits events for RequestManager
+    gameState.addReceivedChunk(packet.x, packet.z);
   },
 };
 

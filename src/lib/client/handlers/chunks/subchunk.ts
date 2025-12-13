@@ -45,10 +45,8 @@ const handler = {
         /* console.log(`    using an existing chunkcolumn at ${x}, ${z}`) */
       }
       await cc.networkDecodeSubChunkNoCache(y, entry.payload);
-      const received = gameState.receivedSubChunks.find((coords) => coords[0] === x && coords[1] === y && coords[2] === z);
-      if (!received?.length) {
-        gameState.receivedSubChunks.push([x,y,z]);
-      }
+      // Use GameState method that emits events for RequestManager
+      gameState.addReceivedSubchunk(x, y, z);
     }
 
     if (DEBUG && cc) {
