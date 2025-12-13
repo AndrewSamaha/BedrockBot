@@ -3,11 +3,17 @@ import { createGetSubchunkDataTool } from './getSubchunkData.js';
 import { EventEmitter } from 'events';
 import type { GameState } from '../../../GameState.js';
 import { WorldStateRequestManager } from '../../WorldStateRequestManager.js';
+import { SpatialMemory } from '../../../spatialMemory/index.js';
 
 class MockGameState extends EventEmitter {
   playerPosition = { x: 100, y: 64, z: 200 };
   worldStateRequestManager: WorldStateRequestManager | undefined;
-  worldStateRequestManager = undefined;
+  spatialMemory: SpatialMemory;
+
+  constructor() {
+    super();
+    this.spatialMemory = new SpatialMemory();
+  }
 }
 
 describe('createGetSubchunkDataTool', () => {

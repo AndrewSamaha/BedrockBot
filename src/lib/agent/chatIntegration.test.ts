@@ -4,6 +4,7 @@ import { AgentExecutor } from './executor.js';
 import type { GameState } from '../GameState.js';
 import type { Client } from 'bedrock-protocol';
 import { EventEmitter } from 'events';
+import { SpatialMemory } from '../spatialMemory/index.js';
 
 // Mock dependencies
 vi.mock('./executor.js', () => ({
@@ -35,10 +36,12 @@ class MockGameState extends EventEmitter {
   client: Client | null = null;
   conversationManager: MockConversationManager | null = null;
   agentExecutor: AgentExecutor | undefined = undefined;
+  spatialMemory: SpatialMemory;
 
   constructor() {
     super();
     this.conversationManager = new MockConversationManager();
+    this.spatialMemory = new SpatialMemory();
   }
 }
 

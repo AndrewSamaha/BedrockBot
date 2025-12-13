@@ -2,9 +2,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createGetChunkDataTool } from './getChunkData.js';
 import { EventEmitter } from 'events';
 import type { GameState } from '../../../GameState.js';
+import { SpatialMemory } from '../../../spatialMemory/index.js';
 
 class MockGameState extends EventEmitter {
   worldStateRequestManager: any;
+  spatialMemory: SpatialMemory;
+
+  constructor() {
+    super();
+    this.spatialMemory = new SpatialMemory();
+  }
 }
 
 describe('createGetChunkDataTool', () => {

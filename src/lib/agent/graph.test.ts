@@ -10,6 +10,7 @@ import {
 } from './graph.js';
 import { createGameStateSnapshot } from './snapshot.js';
 import { EventEmitter } from 'events';
+import { SpatialMemory } from '../spatialMemory/index.js';
 
 // Mock GameState
 class MockGameState extends EventEmitter {
@@ -23,6 +24,7 @@ class MockGameState extends EventEmitter {
   currentTick = 1000n;
   world: any;
   registry: any = {};
+  spatialMemory: SpatialMemory;
 
   constructor() {
     super();
@@ -30,6 +32,7 @@ class MockGameState extends EventEmitter {
       getChunkCount: () => 5,
       getAllChunkCoords: () => [[0, 0]],
     };
+    this.spatialMemory = new SpatialMemory();
   }
 }
 

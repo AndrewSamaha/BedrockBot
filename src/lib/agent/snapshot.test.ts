@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createGameStateSnapshot } from './snapshot.js';
 import type { GameState } from '../GameState.js';
 import { EventEmitter } from 'events';
+import { SpatialMemory } from '../spatialMemory/index.js';
 
 // Mock GameState
 class MockGameState extends EventEmitter {
@@ -22,6 +23,7 @@ class MockGameState extends EventEmitter {
   receivedSubChunks: number[][] = [];
   playerList: any[] = [];
   world: any;
+  spatialMemory: SpatialMemory;
 
   constructor() {
     super();
@@ -42,6 +44,7 @@ class MockGameState extends EventEmitter {
         { x: 101, y: 64, z: 200 },
       ]),
     };
+    this.spatialMemory = new SpatialMemory();
   }
 
   addReceivedSubchunk(x: number, y: number, z: number): void {

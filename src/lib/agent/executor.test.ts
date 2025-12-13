@@ -4,6 +4,7 @@ import { AgentExecutor } from './executor.js';
 import type { GameState } from '../GameState.js';
 import type { Client } from 'bedrock-protocol';
 import { EventEmitter } from 'events';
+import { SpatialMemory } from '../spatialMemory/index.js';
 
 // Mock dependencies - must be defined inside vi.mock factory
 vi.mock('@langchain/openai', () => {
@@ -105,6 +106,7 @@ class MockGameState extends EventEmitter {
   world: any;
   registry: any = {};
   client: any = {};
+  spatialMemory: SpatialMemory;
 
   constructor() {
     super();
@@ -112,6 +114,7 @@ class MockGameState extends EventEmitter {
       getChunkCount: () => 5,
       getAllChunkCoords: () => [[0, 0]],
     };
+    this.spatialMemory = new SpatialMemory();
   }
 }
 
