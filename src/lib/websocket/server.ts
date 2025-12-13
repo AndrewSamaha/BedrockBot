@@ -27,6 +27,20 @@ export interface GameStateSnapshot {
     yaw?: number;
     head_yaw?: number;
   }>;
+  spatialMemoryBlocks?: Array<{
+    x: number;
+    y: number;
+    z: number;
+    blockType: string;
+    engramId: string;
+  }>;
+  spatialMemoryEngrams?: Array<{
+    id: string; // engram.id
+    name: string; // engram.name
+    description: string; // engram.description
+    worldPosition: { x: number; y: number; z: number };
+    blockCount: number;
+  }>;
   timestamp: number;
 }
 
@@ -146,6 +160,63 @@ class GameStateBroadcaster {
       playerSubchunkBlocks = gameState.world.getAllBlocksInSubchunk(cx, cy, cz, gameState.registry);
     }
 
+    // Get spatial memory blocks and engrams
+    let spatialMemoryBlocks: Array<{
+      x: number;
+      y: number;
+      z: number;
+      blockType: string;
+      engramId: string;
+    }> | undefined = undefined;
+    let spatialMemoryEngrams: Array<{
+      id: string;
+      name: string;
+      description: string;
+      worldPosition: { x: number; y: number; z: number };
+      blockCount: number;
+    }> | undefined = undefined;
+
+    if (gameState.spatialMemory) {
+      const allEngrams = gameState.spatialMemory.getAllEngrams();
+      if (allEngrams.length > 0) {
+        // Get all blocks from all engrams (convert to world coordinates)
+        const allBlocks: Array<{
+          x: number;
+          y: number;
+          z: number;
+          blockType: string;
+          engramId: string;
+        }> = [];
+
+        for (const entry of allEngrams) {
+          const blocks = entry.engram.getAllBlocks();
+          const worldPos = entry.worldPosition;
+
+          for (const block of blocks) {
+            // Convert local coords to world coords
+            allBlocks.push({
+              x: worldPos.x + block.x,
+              y: worldPos.y + block.y,
+              z: worldPos.z + block.z,
+              blockType: block.blockType,
+              engramId: entry.engram.id,
+            });
+          }
+        }
+
+        spatialMemoryBlocks = allBlocks;
+
+        // Get engram metadata
+        spatialMemoryEngrams = allEngrams.map((entry) => ({
+          id: entry.engram.id,
+          name: entry.engram.name,
+          description: entry.engram.description,
+          worldPosition: entry.worldPosition,
+          blockCount: entry.engram.getBlockCount(),
+        }));
+      }
+    }
+
     const snapshot: GameStateSnapshot = {
       playerPosition: gameState.playerPosition
         ? {
@@ -178,6 +249,8 @@ class GameStateBroadcaster {
         yaw: player.yaw,
         head_yaw: player.head_yaw,
       })),
+      spatialMemoryBlocks,
+      spatialMemoryEngrams,
       timestamp: Date.now(),
     };
 
