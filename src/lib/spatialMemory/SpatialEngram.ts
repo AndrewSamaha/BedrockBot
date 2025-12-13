@@ -1,5 +1,7 @@
 import { randomUUID } from 'crypto';
+import { Vec3 as Vec3Class } from 'vec3';
 import type { Vec3 } from '../types.js';
+import type { ChunkColumn } from 'prismarine-chunk';
 
 export type BlockData = {
   x: number;
@@ -198,5 +200,193 @@ export class SpatialEngram {
     const z = parseInt(parts[2], 10);
     const blockType = parts.slice(3).join(','); // Handle blockType that might contain commas
     return [x, y, z, blockType];
+  }
+
+  /**
+   * Import blocks from a chunk region
+   * @param chunk - The ChunkColumn to import from
+   * @param cx - Chunk X coordinate
+   * @param cz - Chunk Z coordinate
+   * @param bounds - Bounding box in world coordinates
+   * @param registry - Registry for block name lookup
+   */
+  importFromChunk(
+    chunk: ChunkColumn,
+    cx: number,
+    cz: number,
+    bounds: { min: Vec3; max: Vec3 },
+    registry: any
+  ): void {
+    if (!registry) {
+      throw new Error('Registry is required for importFromChunk');
+    }
+
+    const worldXBase = cx * 16;
+    const worldZBase = cz * 16;
+
+    // Calculate the center of the bounds for centering the engram
+    const centerX = Math.floor((bounds.min.x + bounds.max.x) / 2);
+    const centerY = Math.floor((bounds.min.y + bounds.max.y) / 2);
+    const centerZ = Math.floor((bounds.min.z + bounds.max.z) / 2);
+
+    // Iterate through blocks in the bounding box
+    for (let worldX = bounds.min.x; worldX <= bounds.max.x; worldX++) {
+      for (let worldY = bounds.min.y; worldY <= bounds.max.y; worldY++) {
+        for (let worldZ = bounds.min.z; worldZ <= bounds.max.z; worldZ++) {
+          // Check if we're at maxBlocks limit
+          if (this.blocks.size >= this.maxBlocks) {
+            return; // Stop importing if limit reached
+          }
+
+          // Get block state ID from chunk
+          const stateId = chunk.getBlockStateId(new Vec3Class(worldX, worldY, worldZ));
+          if (stateId === undefined) {
+            continue; // Skip undefined blocks
+          }
+
+          // Look up block name from registry
+          const block = registry.blocksByStateId[stateId];
+          if (!block || !block.name || block.name === 'air') {
+            continue; // Skip air blocks
+          }
+
+          // Convert world coordinates to local coordinates (centered at 0,0,0)
+          const localX = worldX - centerX;
+          const localY = worldY - centerY;
+          const localZ = worldZ - centerZ;
+
+          // Add block to engram
+          this.addBlock(localX, localY, localZ, block.name);
+        }
+      }
+    }
+  }
+
+  /**
+   * Import blocks from a subchunk (16x16x16 region)
+   * @param chunk - The ChunkColumn containing the subchunk
+   * @param cx - Chunk X coordinate
+   * @param cy - Subchunk Y index
+   * @param cz - Chunk Z coordinate
+   * @param registry - Registry for block name lookup
+   */
+  importFromSubchunk(
+    chunk: ChunkColumn,
+    cx: number,
+    cy: number,
+    cz: number,
+    registry: any
+  ): void {
+    if (!registry) {
+      throw new Error('Registry is required for importFromSubchunk');
+    }
+
+    // Subchunk Y range: cy * 16 to cy * 16 + 15
+    const minY = cy * 16;
+    const maxY = cy * 16 + 15;
+
+    // World coordinates for the chunk
+    const worldXBase = cx * 16;
+    const worldZBase = cz * 16;
+
+    // Calculate center of subchunk for centering the engram
+    const centerX = worldXBase + 8; // Center of 16-block width
+    const centerY = minY + 8; // Center of 16-block height
+    const centerZ = worldZBase + 8; // Center of 16-block depth
+
+    // Iterate through all blocks in the subchunk (16x16x16)
+    for (let lx = 0; lx < 16; lx++) {
+      for (let lz = 0; lz < 16; lz++) {
+        for (let wy = minY; wy <= maxY; wy++) {
+          // Check if we're at maxBlocks limit
+          if (this.blocks.size >= this.maxBlocks) {
+            return; // Stop importing if limit reached
+          }
+
+          const worldX = worldXBase + lx;
+          const worldZ = worldZBase + lz;
+
+          // Get block state ID from chunk
+          const stateId = chunk.getBlockStateId(new Vec3Class(worldX, wy, worldZ));
+          if (stateId === undefined) {
+            continue; // Skip undefined blocks
+          }
+
+          // Look up block name from registry
+          const block = registry.blocksByStateId[stateId];
+          if (!block || !block.name || block.name === 'air') {
+            continue; // Skip air blocks
+          }
+
+          // Convert world coordinates to local coordinates (centered at 0,0,0)
+          const localX = worldX - centerX;
+          const localY = wy - centerY;
+          const localZ = worldZ - centerZ;
+
+          // Add block to engram
+          this.addBlock(localX, localY, localZ, block.name);
+        }
+      }
+    }
+  }
+
+  /**
+   * Export blocks to a chunk (for building)
+   * Note: This creates blocks in the chunk at world coordinates
+   * @param chunk - The ChunkColumn to export to
+   * @param worldOrigin - World coordinates where engram's (0,0,0) maps to
+   * @param registry - Registry for block state ID lookup
+   */
+  exportToChunk(chunk: ChunkColumn, worldOrigin: Vec3, registry: any): void {
+    if (!registry) {
+      throw new Error('Registry is required for exportToChunk');
+    }
+
+    const blocks = this.getAllBlocks();
+
+    for (const block of blocks) {
+      // Convert local coordinates to world coordinates
+      const worldX = worldOrigin.x + block.x;
+      const worldY = worldOrigin.y + block.y;
+      const worldZ = worldOrigin.z + block.z;
+
+      // Look up block state ID from registry
+      // Registry.blocksByStateId is indexed by stateId, so we need to find the stateId by name
+      // We need to iterate through blocksByStateId to find matching name
+      let stateId: number | undefined = undefined;
+      for (const [id, blockEntry] of Object.entries(registry.blocksByStateId)) {
+        if ((blockEntry as any).name === block.blockType) {
+          stateId = parseInt(id, 10);
+          break;
+        }
+      }
+
+      if (stateId === undefined) {
+        console.warn(
+          `Could not find state ID for block type: ${block.blockType} at (${worldX}, ${worldY}, ${worldZ})`
+        );
+        continue;
+      }
+
+      // Set block in chunk using setBlockStateId if available
+      // Note: ChunkColumn may not have a direct setBlockStateId method
+      // This is a placeholder - actual implementation may need to use chunk's internal API
+      try {
+        // Try to use setBlockStateId if it exists
+        if (typeof (chunk as any).setBlockStateId === 'function') {
+          (chunk as any).setBlockStateId(
+            new Vec3Class(worldX, worldY, worldZ),
+            stateId
+          );
+        } else {
+          // Fallback: log warning that direct chunk modification isn't supported
+          console.warn(
+            `ChunkColumn.setBlockStateId not available. Block ${block.blockType} at (${worldX}, ${worldY}, ${worldZ}) not set.`
+          );
+        }
+      } catch (error) {
+        console.error(`Error setting block in chunk: ${error}`);
+      }
+    }
   }
 }

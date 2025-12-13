@@ -1,5 +1,6 @@
 import type { Vec3 } from '../types.js';
 import { SpatialEngram, type SpatialEngramJSON } from './SpatialEngram.js';
+import type { GameState } from '../GameState.js';
 
 export type EngramEntry = {
   engram: SpatialEngram;
@@ -161,5 +162,58 @@ export class SpatialMemory {
    */
   getEngramCount(): number {
     return this.engrams.length;
+  }
+
+  /**
+   * Import a region from the game world into spatial memory
+   * @param bounds - Bounding box in world coordinates
+   * @param name - Name for the new engram
+   * @param description - Description for the new engram
+   * @param gameState - GameState instance to access world and registry
+   * @returns The engram ID
+   */
+  importFromGameWorld(
+    bounds: { min: Vec3; max: Vec3 },
+    name: string,
+    description: string,
+    gameState: GameState
+  ): string {
+    if (!gameState.registry) {
+      throw new Error('Registry not initialized in GameState');
+    }
+
+    // Create new engram
+    const engram = new SpatialEngram(name, description);
+
+    // Calculate center of bounds for world position
+    const centerX = Math.floor((bounds.min.x + bounds.max.x) / 2);
+    const centerY = Math.floor((bounds.min.y + bounds.max.y) / 2);
+    const centerZ = Math.floor((bounds.min.z + bounds.max.z) / 2);
+    const worldPosition: Vec3 = { x: centerX, y: centerY, z: centerZ };
+
+    // Determine which chunks we need to iterate through
+    const minChunkX = Math.floor(bounds.min.x / 16);
+    const maxChunkX = Math.floor(bounds.max.x / 16);
+    const minChunkZ = Math.floor(bounds.min.z / 16);
+    const maxChunkZ = Math.floor(bounds.max.z / 16);
+
+    // Iterate through chunks in the bounding box
+    for (let cx = minChunkX; cx <= maxChunkX; cx++) {
+      for (let cz = minChunkZ; cz <= maxChunkZ; cz++) {
+        const chunk = gameState.world.getChunk(cx, cz);
+        if (!chunk) {
+          continue; // Skip unloaded chunks
+        }
+
+        // Import blocks from this chunk that are within bounds
+        engram.importFromChunk(chunk, cx, cz, bounds, gameState.registry);
+
+        // Stop if we've reached maxBlocks limit (check if import stopped early)
+        // The importFromChunk method will stop early if maxBlocks is reached
+      }
+    }
+
+    // Add engram to memory
+    return this.addEngram(engram, worldPosition);
   }
 }
