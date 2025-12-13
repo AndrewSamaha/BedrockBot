@@ -34,6 +34,7 @@ import {
   createClearImaginationTool,
   createGetImaginedBlocksTool,
   createBuildImaginedStructureTool,
+  createFilterBlockTypesTool,
 } from './spatialMemory/index.js';
 
 /**
@@ -69,6 +70,7 @@ export function createAllTools(
     createClearImaginationTool(gameState),
     createGetImaginedBlocksTool(gameState),
     createBuildImaginedStructureTool(client, gameState),
+    createFilterBlockTypesTool(gameState),
   ];
 }
 

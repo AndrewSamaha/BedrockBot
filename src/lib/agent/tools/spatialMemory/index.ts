@@ -12,3 +12,4 @@ export { createImportFromGameWorldTool } from './importFromGameWorld.js';
 export { createClearImaginationTool } from './clearImagination.js';
 export { createGetImaginedBlocksTool } from './getImaginedBlocks.js';
 export { createBuildImaginedStructureTool } from './buildImaginedStructure.js';
+export { createFilterBlockTypesTool } from './filterBlockTypes.js';
