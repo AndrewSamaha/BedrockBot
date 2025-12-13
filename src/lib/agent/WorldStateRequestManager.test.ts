@@ -2,12 +2,14 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
 import type { GameState } from '../GameState.js';
 import { WorldStateRequestManager } from './WorldStateRequestManager.js';
+import { SpatialMemory } from '../spatialMemory/index.js';
 
 // Mock GameState
 class MockGameState extends EventEmitter {
   receivedSubChunks: number[][] = [];
   registry: any = { blocksByStateId: {} };
   world: any;
+  spatialMemory: SpatialMemory;
 
   constructor() {
     super();
@@ -15,6 +17,7 @@ class MockGameState extends EventEmitter {
       getChunk: vi.fn(),
       getAllBlocksInSubchunk: vi.fn(),
     };
+    this.spatialMemory = new SpatialMemory();
   }
 
   // Mock methods that match GameState interface

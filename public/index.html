@@ -298,6 +298,18 @@
           <span class="info-value" id="runtime-entity-id">-</span>
         </div>
       </div>
+
+      <div class="info-section">
+        <h3>Spatial Memory</h3>
+        <div class="info-item">
+          <span class="info-label">Engrams:</span>
+          <span class="info-value" id="spatial-memory-engrams-count">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Imagined Blocks:</span>
+          <span class="info-value" id="spatial-memory-blocks-count">-</span>
+        </div>
+      </div>
     </div>
 
     <div id="canvas-container">
@@ -311,6 +323,12 @@
         </div>
         <div class="control-item">
           <button id="reset-camera">Reset Camera</button>
+        </div>
+        <h4 style="margin-top: 1rem; color: #4caf50; font-size: 0.9rem;">Visualization</h4>
+        <div class="control-item">
+          <label>
+            <input type="checkbox" id="show-imagined-blocks" checked> Show Imagined Blocks
+          </label>
         </div>
         <div class="help-text">
           <strong>Controls:</strong><br>
@@ -512,6 +530,18 @@
         document.getElementById('player-chunk-non-air').textContent = '-';
       }
 
+      // Spatial Memory
+      if (data.spatialMemoryEngrams) {
+        document.getElementById('spatial-memory-engrams-count').textContent = data.spatialMemoryEngrams.length.toString();
+      } else {
+        document.getElementById('spatial-memory-engrams-count').textContent = '0';
+      }
+      if (data.spatialMemoryBlocks) {
+        document.getElementById('spatial-memory-blocks-count').textContent = data.spatialMemoryBlocks.length.toString();
+      } else {
+        document.getElementById('spatial-memory-blocks-count').textContent = '0';
+      }
+
       // Update timestamp
       const timeSinceUpdate = Date.now() - data.timestamp;
       document.getElementById('last-update').textContent = `${timeSinceUpdate}ms ago`;
@@ -596,18 +626,33 @@
     const chunkGroup = new THREE.Group();
     scene.add(chunkGroup);
 
-    // Highest blocks visualization
+    // Highest blocks visualization (game world blocks)
     const blockMeshes = new Map(); // Map of block keys to mesh objects
     const blocksGroup = new THREE.Group();
     scene.add(blocksGroup);
     
-    // Shared geometry and material for blocks (for efficiency)
+    // Shared geometry and material for game blocks (for efficiency)
     const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
     const blockMaterial = new THREE.MeshLambertMaterial({
       color: 0x4caf50,
       transparent: true,
       opacity: 0.3
     });
+
+    // Imagined blocks visualization (spatial memory)
+    const imaginedBlockMeshes = new Map(); // Map of block keys to mesh objects
+    const imaginedBlocksGroup = new THREE.Group();
+    scene.add(imaginedBlocksGroup);
+    
+    // Material for imagined blocks (purple/cyan, semi-transparent)
+    const imaginedBlockMaterial = new THREE.MeshLambertMaterial({
+      color: 0x9c27b0, // Purple
+      transparent: true,
+      opacity: 0.5
+    });
+
+    // Toggle for showing/hiding imagined blocks
+    let showImaginedBlocks = true;
 
     function createPlayerMesh() {
       // Player body (green box)
@@ -894,11 +939,52 @@
       }
       // Note: We no longer clear blocks when data.playerSubchunkBlocks is undefined
       // This allows blocks from previous subchunks to remain visible
+
+      // Update imagined blocks visualization (spatial memory)
+      if (data.spatialMemoryBlocks) {
+        const currentImaginedBlockKeys = new Set();
+        
+        // Create or update imagined block meshes
+        data.spatialMemoryBlocks.forEach((block) => {
+          const blockKey = `${block.x},${block.y},${block.z},${block.engramId}`;
+          currentImaginedBlockKeys.add(blockKey);
+          
+          if (!imaginedBlockMeshes.has(blockKey)) {
+            // Create a new imagined block mesh
+            const blockMesh = new THREE.Mesh(blockGeometry, imaginedBlockMaterial);
+            blockMesh.position.set(block.x + 0.5, block.y + 0.5, block.z + 0.5); // Center the block
+            imaginedBlocksGroup.add(blockMesh);
+            imaginedBlockMeshes.set(blockKey, blockMesh);
+          }
+        });
+        
+        // Remove imagined blocks that are no longer in spatial memory
+        imaginedBlockMeshes.forEach((mesh, key) => {
+          if (!currentImaginedBlockKeys.has(key)) {
+            imaginedBlocksGroup.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            imaginedBlockMeshes.delete(key);
+          }
+        });
+      } else {
+        // Clear all imagined blocks if spatial memory is empty
+        imaginedBlockMeshes.forEach((mesh) => {
+          imaginedBlocksGroup.remove(mesh);
+          mesh.geometry.dispose();
+          mesh.material.dispose();
+        });
+        imaginedBlockMeshes.clear();
+      }
+
+      // Update visibility based on toggle
+      imaginedBlocksGroup.visible = showImaginedBlocks;
     }
 
     // UI Controls
     const followCheckbox = document.getElementById('follow-player');
     const resetButton = document.getElementById('reset-camera');
+    const showImaginedCheckbox = document.getElementById('show-imagined-blocks');
 
     followCheckbox.addEventListener('change', (e) => {
       followPlayer = e.target.checked;
@@ -914,6 +1000,11 @@
       camera.position.set(0, 50, 50);
       controls.target.set(0, 0, 0);
       controls.update();
+    });
+
+    showImaginedCheckbox.addEventListener('change', (e) => {
+      showImaginedBlocks = e.target.checked;
+      imaginedBlocksGroup.visible = showImaginedBlocks;
     });
 
     // Initial render

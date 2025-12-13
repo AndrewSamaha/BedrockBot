@@ -2,10 +2,17 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createGetBlockAtTool } from './getBlockAt.js';
 import { EventEmitter } from 'events';
 import type { GameState } from '../../../GameState.js';
+import { SpatialMemory } from '../../../spatialMemory/index.js';
 
 class MockGameState extends EventEmitter {
   world: any;
   registry: any;
+  spatialMemory: SpatialMemory;
+
+  constructor() {
+    super();
+    this.spatialMemory = new SpatialMemory();
+  }
 }
 
 describe('createGetBlockAtTool', () => {

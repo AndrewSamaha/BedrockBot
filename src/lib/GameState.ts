@@ -2,18 +2,19 @@ import { EventEmitter } from 'events';
 import { type Client } from 'bedrock-protocol';
 import PrismarineRegistryLoader, { type RegistryBedrock } from "prismarine-registry";
 
+import { WorldStateRequestManager } from './agent/WorldStateRequestManager.js';
 import { ConversationManager } from './chat/conversation.js';
 import { createConnection } from './connection.js';
 import { log } from './log.js';
 import { buildAuthInputPacket, createRandomMoveVectorGenerator } from './playerInput/movement.js';
+import { subchunkRequest } from './serverCommands/index';
+import { SpatialMemory } from './spatialMemory/index.js';
 import { type Vec3 } from './types.js';
+import { World, type World } from './World';
 import { gameStateBroadcaster } from './websocket/server.js';
 
 import { botConfig, type BotConfig } from '@/config/bot'
 import { env } from '@/config/env';
-import { World, type World } from './World';
-import { subchunkRequest } from './serverCommands/index';
-import { WorldStateRequestManager } from './agent/WorldStateRequestManager.js';
 
 const TIC_INTERVAL = 50;
 const MINECRAFT_DAY_LENGTH_IN_TICS = 24_000;
@@ -67,6 +68,7 @@ export class GameState extends EventEmitter {
   receivedSubChunks: number[][];
   playerList: unknown[];
   worldStateRequestManager: WorldStateRequestManager | undefined;
+  spatialMemory: SpatialMemory;
 
   private ticInterval: NodeJS.Timeout | null = null;
   private lastBroadcastTime: number = 0;
@@ -89,6 +91,8 @@ export class GameState extends EventEmitter {
     this.playerList = [];
     // Initialize RequestManager with EventEmitter subscriptions
     this.worldStateRequestManager = new WorldStateRequestManager(this);
+    // Initialize spatial memory
+    this.spatialMemory = new SpatialMemory();
   }
 
   static getInstance(): GameState {

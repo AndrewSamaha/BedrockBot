@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createGetPlayerPositionTool } from './getPlayerPosition.js';
 import { EventEmitter } from 'events';
 import type { GameState } from '../../../GameState.js';
+import { SpatialMemory } from '../../../spatialMemory/index.js';
 
 class MockGameState extends EventEmitter {
   playerPosition = { x: 100, y: 64, z: 200 };
@@ -9,6 +10,12 @@ class MockGameState extends EventEmitter {
   yaw = 90;
   headYaw = 90;
   worldStateRequestManager = undefined;
+  spatialMemory: SpatialMemory;
+
+  constructor() {
+    super();
+    this.spatialMemory = new SpatialMemory();
+  }
 }
 
 describe('createGetPlayerPositionTool', () => {

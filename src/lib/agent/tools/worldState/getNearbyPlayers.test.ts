@@ -2,11 +2,18 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createGetNearbyPlayersTool } from './getNearbyPlayers.js';
 import { EventEmitter } from 'events';
 import type { GameState } from '../../../GameState.js';
+import { SpatialMemory } from '../../../spatialMemory/index.js';
 
 class MockGameState extends EventEmitter {
   playerPosition = { x: 100, y: 64, z: 200 };
   playerList: any[] = [];
   worldStateRequestManager = undefined;
+  spatialMemory: SpatialMemory;
+
+  constructor() {
+    super();
+    this.spatialMemory = new SpatialMemory();
+  }
 }
 
 describe('createGetNearbyPlayersTool', () => {

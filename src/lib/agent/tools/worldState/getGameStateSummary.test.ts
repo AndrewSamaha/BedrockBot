@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createGetGameStateSummaryTool } from './getGameStateSummary.js';
 import { EventEmitter } from 'events';
 import type { GameState } from '../../../GameState.js';
+import { SpatialMemory } from '../../../spatialMemory/index.js';
 
 class MockGameState extends EventEmitter {
   spawned = true;
@@ -15,6 +16,12 @@ class MockGameState extends EventEmitter {
   sleepingPlayerCount = 2;
   ableToSleep = 3;
   world: any;
+  spatialMemory: SpatialMemory;
+
+  constructor() {
+    super();
+    this.spatialMemory = new SpatialMemory();
+  }
 }
 
 describe('createGetGameStateSummaryTool', () => {

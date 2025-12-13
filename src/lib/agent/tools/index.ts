@@ -5,6 +5,7 @@
  * Tools are organized into:
  * - World State Query Tools: Read current game state
  * - Action Tools: Perform actions in the game
+ * - Spatial Memory Tools: Create and manipulate imagined structures
  */
 
 import type { Client } from 'bedrock-protocol';
@@ -24,6 +25,17 @@ import {
   createFillTool,
   createSayTool,
 } from './actions/index.js';
+import {
+  createCreateImaginedStructureTool,
+  createAddBlockToImaginationTool,
+  createRemoveBlockFromImaginationTool,
+  createFillImaginedRegionTool,
+  createImportFromGameWorldTool,
+  createClearImaginationTool,
+  createGetImaginedBlocksTool,
+  createBuildImaginedStructureTool,
+  createFilterBlockTypesTool,
+} from './spatialMemory/index.js';
 
 /**
  * Create all tools for the agent
@@ -48,9 +60,21 @@ export function createAllTools(
     createLookTool(client, gameState),
     createFillTool(client),
     createSayTool(client, username),
+
+    // Spatial Memory Tools
+    createCreateImaginedStructureTool(gameState),
+    createAddBlockToImaginationTool(gameState),
+    createRemoveBlockFromImaginationTool(gameState),
+    createFillImaginedRegionTool(gameState),
+    createImportFromGameWorldTool(gameState),
+    createClearImaginationTool(gameState),
+    createGetImaginedBlocksTool(gameState),
+    createBuildImaginedStructureTool(client, gameState),
+    createFilterBlockTypesTool(gameState),
   ];
 }
 
 // Export individual tool creators for testing/customization
 export * from './worldState/index.js';
 export * from './actions/index.js';
+export * from './spatialMemory/index.js';
